@@ -2338,13 +2338,13 @@ bool Recompiler::Recompile(
     case PPC_INST_VSRAB:
         // TODO: vectorize, ensure endianness is correct
         for (size_t i = 0; i < 16; i++)
-            println("\t{}.s8[{}] = {}.s8[{}] >> ({}.u8[{}] & 0x7);", v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i * 4);
+            println("\t{}.s8[{}] = {}.s8[{}] >> ({}.u8[{}] & 0x7);", v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i);
         break;
 
     case PPC_INST_VSRAH:
         // TODO: vectorize, ensure endianness is correct
         for (size_t i = 0; i < 8; i++)
-            println("\t{}.s16[{}] = {}.s16[{}] >> ({}.u8[{}] & 0xF);", v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i * 4);
+            println("\t{}.s16[{}] = {}.s16[{}] >> ({}.u8[{}] & 0xF);", v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i * 2);
         break;
 
     case PPC_INST_VSRAW:
@@ -2357,7 +2357,7 @@ bool Recompiler::Recompile(
     case PPC_INST_VSRH:
         // TODO: vectorize, ensure endianness is correct
         for (size_t i = 0; i < 8; i++)
-            println("\t{}.u16[{}] = {}.u16[{}] >> ({}.u8[{}] & 0xF);", v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i * 4);
+            println("\t{}.u16[{}] = {}.u16[{}] >> ({}.u8[{}] & 0xF);", v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i * 2);
         break;
 
     case PPC_INST_VSRW:
