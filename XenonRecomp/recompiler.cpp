@@ -1986,6 +1986,16 @@ bool Recompiler::Recompile(
             println("_mm_load_ps({}.f32)));", v(insn.operands[1]));
         break;
 
+    case PPC_INST_VCTUXS:
+    case PPC_INST_VCFPUXWS128:
+        printSetFlushMode(true);
+        print("\t_mm_store_si128((__m128i*){}.u32, _mm_vctuxs(", v(insn.operands[0]));
+        if (insn.operands[2] != 0)
+            println("_mm_mul_ps(_mm_load_ps({}.f32), _mm_set1_ps({}))));", v(insn.operands[1]), 1u << insn.operands[2]);
+        else
+            println("_mm_load_ps({}.f32)));", v(insn.operands[1]));
+        break;
+
     case PPC_INST_VCFSX:
     case PPC_INST_VCSXWFP128:
     {
@@ -2324,6 +2334,14 @@ bool Recompiler::Recompile(
         println("\t_mm_store_ps({}.f32, _mm_blend_ps(_mm_load_ps({}.f32), _mm_permute_ps(_mm_load_ps({}.f32), {}), {}));", v(insn.operands[0]), v(insn.operands[0]), v(insn.operands[1]), shuffles[insn.operands[3]], insn.operands[2]);
         break;
     }
+
+    case PPC_INST_VRLH:
+        for (size_t i = 0; i < 8; i++)
+        {
+            println("\t{0}.u16[{1}] = ({2}.u16[{1}] << ({3}.u16[{1}] & 0xF)) | ({2}.u16[{1}] >> (16 - ({3}.u16[{1}] & 0xF)));", vTemp(), i, v(insn.operands[1]), v(insn.operands[2]));
+        }
+        println("{} = {};", v(insn.operands[0]), vTemp());
+        break;
 
     case PPC_INST_VRSQRTEFP:
     case PPC_INST_VRSQRTEFP128:

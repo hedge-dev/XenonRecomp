@@ -645,6 +645,19 @@ inline __m128i _mm_vctsxs(__m128 src1)
     return _mm_andnot_si128(_mm_castps_si128(xmm2), _mm_castps_si128(dest));
 }
 
+inline __m128i _mm_vctuxs(__m128 src1)
+{
+    __m128 xmm0 = _mm_max_ps(src1, _mm_set1_epi32(0));
+    __m128 xmm1 = _mm_cmpge_ps(xmm0, _mm_set1_ps((float)0x80000000));
+    __m128 xmm2 = _mm_sub_ps(xmm0, _mm_set1_ps((float)0x80000000));
+    xmm0 = _mm_blendv_ps(xmm0, xmm2, xmm1);
+    __m128i dest = _mm_cvttps_epi32(xmm0);
+    xmm0 = _mm_cmpeq_epi32(dest, _mm_set1_epi32(INT_MIN));
+    xmm1 = _mm_and_si128(xmm1, _mm_set1_epi32(INT_MIN));
+    dest = _mm_add_epi32(dest, xmm1);
+    return _mm_or_si128(dest, xmm0);
+}
+
 inline __m128i _mm_vsr(__m128i a, __m128i b)
 {
     b = _mm_srli_epi64(_mm_slli_epi64(b, 61), 61);
