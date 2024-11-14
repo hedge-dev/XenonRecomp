@@ -1928,7 +1928,12 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_VADDSWS:
-        println("\t_mm_store_si128((__m128i*){}.s32, _mm_adds_epi32(_mm_load_si128((__m128i*){}.s32), _mm_load_si128((__m128i*){}.s32)));", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+        // TODO: vectorize
+        for (size_t i = 0; i < 4; i++)
+        {
+            println("\t{}.s64 = int64_t({}.s32[{}]) + int64_t({}.s32[{}]);", temp(), v(insn.operands[1]), i, v(insn.operands[2]), i);
+            println("\t{}.s32[{}] = {}.s64 > INT_MAX ? INT_MAX : {}.s64 < INT_MIN ? INT_MIN : {}.s64;", v(insn.operands[0]), i, temp(), temp(), temp());
+        }
         break;
 
     case PPC_INST_VADDUBM:
