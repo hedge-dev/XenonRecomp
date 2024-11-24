@@ -1606,7 +1606,7 @@ bool Recompiler::Recompile(
 
     case PPC_INST_STBU:
         println("\t{} = {} + {}.u32;", ea(), int32_t(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U8({}, {}.u8);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u8);", mmioStore() ? "PPC_MM_STORE_U8(" : "PPC_STORE_U8(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[2]), ea());
         break;
 
@@ -1619,7 +1619,7 @@ bool Recompiler::Recompile(
 
     case PPC_INST_STBUX:
         println("\t{} = {}.u32 + {}.u32;", ea(), r(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U8({}, {}.u8);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u8);", mmioStore() ? "PPC_MM_STORE_U8(" : "PPC_STORE_U8(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[1]), ea());
         break;
 
@@ -1642,7 +1642,7 @@ bool Recompiler::Recompile(
 
     case PPC_INST_STDU:
         println("\t{} = {} + {}.u32;", ea(), int32_t(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U64({}, {}.u64);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u64);", mmioStore() ? "PPC_MM_STORE_U64(" : "PPC_STORE_U64(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[2]), ea());
         break;
 
@@ -1655,7 +1655,7 @@ bool Recompiler::Recompile(
 
     case PPC_INST_STDUX:
         println("\t{} = {}.u32 + {}.u32;", ea(), r(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U64({}, {}.u64);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u64);", mmioStore() ? "PPC_MM_STORE_U64(" : "PPC_STORE_U64(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[1]), ea());
         break;
 
@@ -1670,7 +1670,7 @@ bool Recompiler::Recompile(
     case PPC_INST_STFDU:
         printSetFlushMode(false);
         println("\t{} = {} + {}.u32;", ea(), int32_t(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U64({}, {}.u64);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u64);", mmioStore() ? "PPC_MM_STORE_U64(" : "PPC_STORE_U64(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[2]), ea());
         break;
 
@@ -1703,7 +1703,7 @@ bool Recompiler::Recompile(
         printSetFlushMode(false);
         println("\t{}.f32 = float({}.f64);", temp(), f(insn.operands[0]));
         println("\t{} = {} + {}.u32;", ea(), int32_t(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U32({}, {}.u32);", ea(), temp());
+        println("\t{}{}, {}.u32);", mmioStore() ? "PPC_MM_STORE_U32(" : "PPC_STORE_U32(", ea(), temp());
         println("\t{}.u32 = {};", r(insn.operands[2]), ea());
         break;
 
@@ -1720,7 +1720,7 @@ bool Recompiler::Recompile(
         printSetFlushMode(false);
         println("\t{}.f32 = float({}.f64);", temp(), f(insn.operands[0]));
         println("\t{} = {}.u32 + {}.u32;", ea(), r(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U32({}, {}.u32);", ea(), temp());
+        println("\t{}{}, {}.u32);", mmioStore() ? "PPC_MM_STORE_U32(" : "PPC_STORE_U32(", ea(), temp());
         println("\t{}.u32 = {};", r(insn.operands[1]), ea());
         break;
 
@@ -1733,13 +1733,13 @@ bool Recompiler::Recompile(
 
     case PPC_INST_STHU:
         println("\t{} = {} + {}.u32;", ea(), int32_t(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U16({}, {}.u16);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u16);", mmioStore() ? "PPC_MM_STORE_U16(" : "PPC_STORE_U16(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[2]), ea());
         break;
 
     case PPC_INST_STHUX:
         println("\t{} = {}.u32 + {}.u32;", ea(), r(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U16({}, {}.u16);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u16);", mmioStore() ? "PPC_MM_STORE_U16(" : "PPC_STORE_U16(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[1]), ea());
         break;
 
@@ -1838,13 +1838,13 @@ bool Recompiler::Recompile(
 
     case PPC_INST_STWU:
         println("\t{} = {} + {}.u32;", ea(), int32_t(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U32({}, {}.u32);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u32);", mmioStore() ? "PPC_MM_STORE_U32(" : "PPC_STORE_U32(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[2]), ea());
         break;
 
     case PPC_INST_STWUX:
         println("\t{} = {}.u32 + {}.u32;", ea(), r(insn.operands[1]), r(insn.operands[2]));
-        println("\tPPC_STORE_U32({}, {}.u32);", ea(), r(insn.operands[0]));
+        println("\t{}{}, {}.u32);", mmioStore() ? "PPC_MM_STORE_U32(" : "PPC_STORE_U32(", ea(), r(insn.operands[0]));
         println("\t{}.u32 = {};", r(insn.operands[1]), ea());
         break;
 
