@@ -1,26 +1,28 @@
 #pragma once
 
+#include <filesystem>
+#include <fstream>
 #include <vector>
 
-inline std::vector<uint8_t> LoadFile(const char* path)
+inline std::vector<uint8_t> LoadFile(const std::filesystem::path& path)
 {
-    std::vector<uint8_t> data{};
-    auto* stream = fopen(path, "rb");
-    if (stream == nullptr)
+    std::ifstream stream(path, std::ios::binary);
+    if (!stream.is_open())
     {
         return {};
     }
 
-    fseek(stream, 0, SEEK_END);
+    stream.seekg(0, std::ios::end);
+    std::streampos size = stream.tellg();
+    stream.seekg(0, std::ios::beg);
 
-    const auto size = ftell(stream);
-
-    fseek(stream, 0, SEEK_SET);
-
+    std::vector<uint8_t> data;
     data.resize(size);
-
-    fread(data.data(), 1, data.size(), stream);
-    fclose(stream);
+    stream.read((char *)(data.data()), size);
+    if (stream.bad())
+    {
+        return {};
+    }
 
     return data;
 }
