@@ -7,45 +7,6 @@
 
 #ifdef _WIN32
     #include <windows.h>
-#else
-    #define near
-    #define far
-
-    typedef char CHAR;
-    typedef wchar_t WCHAR;
-    typedef unsigned long DWORD;
-    typedef int BOOL;
-    typedef unsigned char BYTE;
-    typedef unsigned short WORD;
-    typedef float FLOAT;
-    typedef FLOAT* PFLOAT;
-    typedef BOOL near* PBOOL;
-    typedef BOOL far* LPBOOL;
-    typedef BYTE near* PBYTE;
-    typedef BYTE far* LPBYTE;
-    typedef int near* PINT;
-    typedef int far* LPINT;
-    typedef WORD near* PWORD;
-    typedef WORD far* LPWORD;
-    typedef long far* LPLONG;
-    typedef DWORD near* PDWORD;
-    typedef DWORD far* LPDWORD;
-    typedef void far* LPVOID;
-    typedef const void far* LPCVOID;
-    typedef unsigned long ULONG;
-    typedef ULONG* PULONG;
-    typedef signed long LONG;
-    typedef LONG* PLONG;
-    typedef unsigned long long ULONGLONG;
-    typedef ULONGLONG* PULONGLONG;
-    typedef unsigned short USHORT;
-    typedef USHORT* PUSHORT;
-    typedef unsigned char UCHAR;
-    typedef UCHAR* PUCHAR;
-    typedef char* PSZ;
-    typedef int INT;
-    typedef unsigned int UINT;
-    typedef unsigned int* PUINT;
 #endif
 
 // real win32 handles will never use the upper bits unless something goes really wrong
@@ -175,33 +136,23 @@ struct HostObject
     typedef TGuest guest_type;
 };
 
-typedef BYTE XBYTE;
-typedef be<uint16_t> XWORD;
-typedef be<uint32_t> XDWORD;
-typedef be<uint64_t> XQWORD;
-
-typedef XBYTE* XLPBYTE;
-typedef XWORD* XLPWORD;
-typedef XDWORD* XLPDWORD;
-typedef XQWORD* XLPQWORD;
-
 struct _XLIST_ENTRY;
 typedef _XLIST_ENTRY XLIST_ENTRY;
 typedef xpointer<XLIST_ENTRY> PXLIST_ENTRY;
 
 typedef struct _IMAGE_CE_RUNTIME_FUNCTION
 {
-    DWORD BeginAddress;
+    uint32_t BeginAddress;
 
     union 
     {
-        DWORD Data;
+        uint32_t Data;
         struct
         {
-            DWORD PrologLength : 8;
-            DWORD FunctionLength : 22;
-            DWORD ThirtyTwoBit : 1;
-            DWORD ExceptionFlag : 1;
+            uint32_t PrologLength : 8;
+            uint32_t FunctionLength : 22;
+            uint32_t ThirtyTwoBit : 1;
+            uint32_t ExceptionFlag : 1;
         };
     };
 } IMAGE_CE_RUNTIME_FUNCTION;
@@ -210,8 +161,8 @@ static_assert(sizeof(IMAGE_CE_RUNTIME_FUNCTION) == 8);
 
 typedef struct _XLIST_ENTRY
 {
-    XDWORD Flink;
-    XDWORD Blink;
+    be<uint32_t> Flink;
+    be<uint32_t> Blink;
 } XLIST_ENTRY;
 
 typedef struct _XDISPATCHER_HEADER
@@ -220,30 +171,30 @@ typedef struct _XDISPATCHER_HEADER
     {
         struct
         {
-            UCHAR Type;
+            uint8_t Type;
             union
             {
-                UCHAR Abandoned;
-                UCHAR Absolute;
-                UCHAR NpxIrql;
-                UCHAR Signalling;
+                uint8_t Abandoned;
+                uint8_t Absolute;
+                uint8_t NpxIrql;
+                uint8_t Signalling;
             };
             union
             {
-                UCHAR Size;
-                UCHAR Hand;
+                uint8_t Size;
+                uint8_t Hand;
             };
             union
             {
-                UCHAR Inserted;
-                UCHAR DebugActive;
-                UCHAR DpcActive;
+                uint8_t Inserted;
+                uint8_t DebugActive;
+                uint8_t DpcActive;
             };
         };
-        XDWORD Lock;
+        be<uint32_t> Lock;
     };
 
-    XDWORD SignalState;
+    be<uint32_t> SignalState;
     XLIST_ENTRY WaitListHead;
 } XDISPATCHER_HEADER, * XPDISPATCHER_HEADER;
 
@@ -251,20 +202,20 @@ typedef struct _XDISPATCHER_HEADER
 typedef struct _XRTL_CRITICAL_SECTION
 {
     XDISPATCHER_HEADER Header;
-    long LockCount;
+    int32_t LockCount;
     int32_t RecursionCount;
     uint32_t OwningThread;
 } XRTL_CRITICAL_SECTION;
 
 typedef struct _XANSI_STRING {
-    XWORD Length;
-    XWORD MaximumLength;
+    be<uint16_t> Length;
+    be<uint16_t> MaximumLength;
     xpointer<char> Buffer;
 } XANSI_STRING;
 
 typedef struct _XOBJECT_ATTRIBUTES
 {
-    XDWORD RootDirectory;
+    be<uint32_t> RootDirectory;
     xpointer<XANSI_STRING> Name;
     xpointer<void> Attributes;
 } XOBJECT_ATTRIBUTES;
@@ -274,18 +225,18 @@ typedef XDISPATCHER_HEADER XKEVENT;
 typedef struct _XIO_STATUS_BLOCK
 {
     union {
-        XDWORD Status;
-        XDWORD Pointer;
+        be<uint32_t> Status;
+        be<uint32_t> Pointer;
     };
     be<uint32_t> Information;
 } XIO_STATUS_BLOCK;
 
 typedef struct _XOVERLAPPED {
-    XDWORD Internal;
-    XDWORD InternalHigh;
-    XDWORD Offset;
-    XDWORD OffsetHigh;
-    XDWORD hEvent;
+    be<uint32_t> Internal;
+    be<uint32_t> InternalHigh;
+    be<uint32_t> Offset;
+    be<uint32_t> OffsetHigh;
+    be<uint32_t> hEvent;
 } XOVERLAPPED;
 
 // this name is so dumb
@@ -294,8 +245,8 @@ typedef struct _XXOVERLAPPED {
     {
         struct
         {
-            XDWORD Error;
-            XDWORD Length;
+            be<uint32_t> Error;
+            be<uint32_t> Length;
         };
 
         struct
@@ -305,24 +256,24 @@ typedef struct _XXOVERLAPPED {
         };
     };
     uint32_t InternalContext;
-    XDWORD hEvent;
-    XDWORD pCompletionRoutine;
-    XDWORD dwCompletionContext;
-    XDWORD dwExtendedError;
+    be<uint32_t> hEvent;
+    be<uint32_t> pCompletionRoutine;
+    be<uint32_t> dwCompletionContext;
+    be<uint32_t> dwExtendedError;
 } XXOVERLAPPED, *PXXOVERLAPPED;
 
 static_assert(sizeof(_XXOVERLAPPED) == 0x1C);
 
 // https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-memorystatus
 typedef struct _XMEMORYSTATUS {
-    XDWORD dwLength;
-    XDWORD dwMemoryLoad;
-    XDWORD dwTotalPhys;
-    XDWORD dwAvailPhys;
-    XDWORD dwTotalPageFile;
-    XDWORD dwAvailPageFile;
-    XDWORD dwTotalVirtual;
-    XDWORD dwAvailVirtual;
+    be<uint32_t> dwLength;
+    be<uint32_t> dwMemoryLoad;
+    be<uint32_t> dwTotalPhys;
+    be<uint32_t> dwAvailPhys;
+    be<uint32_t> dwTotalPageFile;
+    be<uint32_t> dwAvailPageFile;
+    be<uint32_t> dwTotalVirtual;
+    be<uint32_t> dwAvailVirtual;
 } XMEMORYSTATUS, * XLPMEMORYSTATUS;
 
 typedef struct _XVIDEO_MODE
@@ -342,28 +293,28 @@ typedef struct _XVIDEO_MODE
 typedef struct _XKSEMAPHORE
 {
     XDISPATCHER_HEADER Header;
-    XDWORD Limit;
+    be<uint32_t> Limit;
 } XKSEMAPHORE;
 
 typedef struct _XUSER_SIGNIN_INFO {
-    be<ULONGLONG> xuid;
-    XDWORD dwField08;
-    XDWORD SigninState;
-    XDWORD dwField10;
-    XDWORD dwField14;
-    CHAR Name[16];
+    be<uint64_t> xuid;
+    be<uint32_t> dwField08;
+    be<uint32_t> SigninState;
+    be<uint32_t> dwField10;
+    be<uint32_t> dwField14;
+    char Name[16];
 } XUSER_SIGNIN_INFO;
 
 typedef struct _XTIME_FIELDS
 {
-    XWORD Year;
-    XWORD Month;
-    XWORD Day;
-    XWORD Hour;
-    XWORD Minute;
-    XWORD Second;
-    XWORD Milliseconds;
-    XWORD Weekday;
+    be<uint16_t> Year;
+    be<uint16_t> Month;
+    be<uint16_t> Day;
+    be<uint16_t> Hour;
+    be<uint16_t> Minute;
+    be<uint16_t> Second;
+    be<uint16_t> Milliseconds;
+    be<uint16_t> Weekday;
 } XTIME_FIELDS, * PXTIME_FIELDS;
 
 // Content types
@@ -380,10 +331,10 @@ typedef struct _XTIME_FIELDS
 
 typedef struct _XCONTENT_DATA
 {
-    XDWORD DeviceID;
-    XDWORD dwContentType;
-    be<WCHAR> szDisplayName[XCONTENT_MAX_DISPLAYNAME];
-    CHAR szFileName[XCONTENT_MAX_FILENAME];
+    be<uint32_t> DeviceID;
+    be<uint32_t> dwContentType;
+    be<wchar_t> szDisplayName[XCONTENT_MAX_DISPLAYNAME];
+    char szFileName[XCONTENT_MAX_FILENAME];
 } XCONTENT_DATA, * PXCONTENT_DATA;
 
 typedef struct _XHOSTCONTENT_DATA : _XCONTENT_DATA
@@ -398,11 +349,11 @@ typedef struct _XHOSTCONTENT_DATA : _XCONTENT_DATA
 
 typedef struct _XDEVICE_DATA
 {
-    XDWORD DeviceID;
-    XDWORD DeviceType;
-    XQWORD ulDeviceBytes;
-    XQWORD ulDeviceFreeBytes;
-    be<WCHAR> wszName[XCONTENTDEVICE_MAX_NAME];
+    be<uint32_t> DeviceID;
+    be<uint32_t> DeviceType;
+    be<uint64_t> ulDeviceBytes;
+    be<uint64_t> ulDeviceFreeBytes;
+    be<wchar_t> wszName[XCONTENTDEVICE_MAX_NAME];
 } XDEVICE_DATA, *PXDEVICE_DATA;
 
 // Direct reflection of XInput structures
@@ -427,32 +378,32 @@ typedef struct _XDEVICE_DATA
 
 typedef struct _XAMINPUT_GAMEPAD
 {
-    WORD                                wButtons;
-    BYTE                                bLeftTrigger;
-    BYTE                                bRightTrigger;
-    SHORT                               sThumbLX;
-    SHORT                               sThumbLY;
-    SHORT                               sThumbRX;
-    SHORT                               sThumbRY;
+    uint16_t                            wButtons;
+    uint8_t                             bLeftTrigger;
+    uint8_t                             bRightTrigger;
+    int16_t                             sThumbLX;
+    int16_t                             sThumbLY;
+    int16_t                             sThumbRX;
+    int16_t                             sThumbRY;
 } XAMINPUT_GAMEPAD, *PXAMINPUT_GAMEPAD;
 
 typedef struct _XAMINPUT_VIBRATION
 {
-    WORD                                wLeftMotorSpeed;
-    WORD                                wRightMotorSpeed;
+    uint16_t                            wLeftMotorSpeed;
+    uint16_t                            wRightMotorSpeed;
 } XAMINPUT_VIBRATION, * PXAMINPUT_VIBRATION;
 
 typedef struct _XAMINPUT_CAPABILITIES
 {
-    BYTE                                Type;
-    BYTE                                SubType;
-    WORD                                Flags;
+    uint8_t                             Type;
+    uint8_t                             SubType;
+    uint16_t                            Flags;
     XAMINPUT_GAMEPAD                    Gamepad;
     XAMINPUT_VIBRATION                  Vibration;
 } XAMINPUT_CAPABILITIES, * PXAMINPUT_CAPABILITIES;
 
 typedef struct _XAMINPUT_STATE
 {
-    DWORD                               dwPacketNumber;
+    uint32_t                            dwPacketNumber;
     XAMINPUT_GAMEPAD                    Gamepad;
 } XAMINPUT_STATE, * PXAMINPUT_STATE;

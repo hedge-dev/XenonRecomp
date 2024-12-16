@@ -1,5 +1,9 @@
 #include "dis-asm.h"
 
+#ifndef EIO
+#define EIO 5
+#endif
+
 /* Get LENGTH bytes from info's buffer, at target address memaddr.
    Transfer them to myaddr.  */
 int

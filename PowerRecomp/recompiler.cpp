@@ -607,7 +607,7 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_BLRL:
-        println("__debugbreak();");
+        println("__builtin_debugtrap();");
         break;
 
     case PPC_INST_BLT:
@@ -688,7 +688,7 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_CNTLZW:
-        println("\t{}.u64 = __lzcnt({}.u32);", r(insn.operands[0]), r(insn.operands[1]));
+        println("\t{}.u64 = __lzcnt32({}.u32);", r(insn.operands[0]), r(insn.operands[1]));
         break;
 
     case PPC_INST_DB16CYC:
@@ -1263,43 +1263,43 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_RLDICL:
-        println("\t{}.u64 = _rotl64({}.u64, {}) & 0x{:X};", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], ComputeMask(insn.operands[3], 63));
+        println("\t{}.u64 = __builtin_rotateleft64({}.u64, {}) & 0x{:X};", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], ComputeMask(insn.operands[3], 63));
         break;
 
     case PPC_INST_RLDICR:
-        println("\t{}.u64 = _rotl64({}.u64, {}) & 0x{:X};", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], ComputeMask(0, insn.operands[3]));
+        println("\t{}.u64 = __builtin_rotateleft64({}.u64, {}) & 0x{:X};", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], ComputeMask(0, insn.operands[3]));
         break;
 
     case PPC_INST_RLDIMI:
     {
         const uint64_t mask = ComputeMask(insn.operands[3], ~insn.operands[2]);
-        println("\t{}.u64 = (_rotl64({}.u64, {}) & 0x{:X}) | ({}.u64 & 0x{:X});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], mask, r(insn.operands[0]), ~mask);
+        println("\t{}.u64 = (__builtin_rotateleft64({}.u64, {}) & 0x{:X}) | ({}.u64 & 0x{:X});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], mask, r(insn.operands[0]), ~mask);
         break;
     }
 
     case PPC_INST_RLWIMI:
     {
         const uint64_t mask = ComputeMask(insn.operands[3] + 32, insn.operands[4] + 32);
-        println("\t{}.u64 = (_rotl({}.u32, {}) & 0x{:X}) | ({}.u64 & 0x{:X});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], mask, r(insn.operands[0]), ~mask);
+        println("\t{}.u64 = (__builtin_rotateleft32({}.u32, {}) & 0x{:X}) | ({}.u64 & 0x{:X});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2], mask, r(insn.operands[0]), ~mask);
         break;
     }
 
     case PPC_INST_RLWINM:
-        println("\t{}.u64 = _rotl64({}.u32 | ({}.u64 << 32), {}) & 0x{:X};", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[1]), insn.operands[2], ComputeMask(insn.operands[3] + 32, insn.operands[4] + 32));
+        println("\t{}.u64 = __builtin_rotateleft64({}.u32 | ({}.u64 << 32), {}) & 0x{:X};", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[1]), insn.operands[2], ComputeMask(insn.operands[3] + 32, insn.operands[4] + 32));
         if (strchr(insn.opcode->name, '.'))
             println("\t{}.compare<int32_t>({}.s32, 0, {});", cr(0), r(insn.operands[0]), xer());
         break;
 
     case PPC_INST_ROTLDI:
-        println("\t{}.u64 = _rotl64({}.u64, {});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2]);
+        println("\t{}.u64 = __builtin_rotateleft64({}.u64, {});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2]);
         break;
 
     case PPC_INST_ROTLW:
-        println("\t{}.u64 = _rotl({}.u32, {}.u8 & 0x1F);", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+        println("\t{}.u64 = __builtin_rotateleft32({}.u32, {}.u8 & 0x1F);", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
         break;
 
     case PPC_INST_ROTLWI:
-        println("\t{}.u64 = _rotl({}.u32, {});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2]);
+        println("\t{}.u64 = __builtin_rotateleft32({}.u32, {});", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2]);
         if (strchr(insn.opcode->name, '.'))
             println("\t{}.compare<int32_t>({}.s32, 0, {});", cr(0), r(insn.operands[0]), xer());
         break;
@@ -1398,10 +1398,10 @@ bool Recompiler::Recompile(
     case PPC_INST_STDCX:
         println("\t{}.lt = 0;", cr(0));
         println("\t{}.gt = 0;", cr(0));
-        print("\t{}.eq = _InterlockedCompareExchange64(reinterpret_cast<__int64*>(base + ", cr(0));
+        print("\t{}.eq = __sync_bool_compare_and_swap(reinterpret_cast<uint64_t*>(base + ", cr(0));
         if (insn.operands[1] != 0)
             print("{}.u32 + ", r(insn.operands[1]));
-        println("{}.u32), __builtin_bswap64({}.s64), {}.s64) == {}.s64;", r(insn.operands[2]), r(insn.operands[0]), reserved(), reserved());
+        println("{}.u32), {}.s64, __builtin_bswap64({}.s64));", r(insn.operands[2]), reserved(), r(insn.operands[0]));
         println("\t{}.so = {}.so;", cr(0), xer());
         break;
 
@@ -1553,10 +1553,10 @@ bool Recompiler::Recompile(
     case PPC_INST_STWCX:
         println("\t{}.lt = 0;", cr(0));
         println("\t{}.gt = 0;", cr(0));
-        print("\t{}.eq = _InterlockedCompareExchange(reinterpret_cast<long*>(base + ", cr(0));
+        print("\t{}.eq = __sync_bool_compare_and_swap(reinterpret_cast<uint32_t*>(base + ", cr(0));
         if (insn.operands[1] != 0)
             print("{}.u32 + ", r(insn.operands[1]));
-        println("{}.u32), __builtin_bswap32({}.s32), {}.s32) == {}.s32;", r(insn.operands[2]), r(insn.operands[0]), reserved(), reserved());
+        println("{}.u32), {}.s32, __builtin_bswap32({}.s32));", r(insn.operands[2]), reserved(), r(insn.operands[0]));
         println("\t{}.so = {}.so;", cr(0), xer());
         break;
 
@@ -1726,7 +1726,7 @@ bool Recompiler::Recompile(
 
     case PPC_INST_VCMPBFP:
     case PPC_INST_VCMPBFP128:
-        println("\t__debugbreak();");
+        println("\t__builtin_debugtrap();");
         break;
 
     case PPC_INST_VCMPEQFP:
@@ -1910,7 +1910,7 @@ bool Recompiler::Recompile(
             break;
 
         default:
-            println("\t__debugbreak();");
+            println("\t__builtin_debugtrap();");
             break;
         }
         break;
@@ -2086,7 +2086,7 @@ bool Recompiler::Recompile(
             break;
 
         default:
-            println("\t__debugbreak();");
+            println("\t__builtin_debugtrap();");
             break;
         }
         break;

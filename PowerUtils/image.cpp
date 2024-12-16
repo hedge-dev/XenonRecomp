@@ -2,6 +2,7 @@
 #include "elf.h"
 #include "xex.h"
 #include <cassert>
+#include <cstring>
 
 void Image::Map(const std::string_view& name, size_t base, uint32_t size, uint8_t flags, uint8_t* data)
 {

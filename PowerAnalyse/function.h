@@ -1,4 +1,6 @@
 #pragma once
+
+#include <cstddef>
 #include <vector>
 
 #ifdef _DEBUG

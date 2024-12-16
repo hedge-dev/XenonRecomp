@@ -5,14 +5,21 @@
 #error "ppc_config.h must be included before ppc_context.h"
 #endif
 
+#include <climits>
 #include <cmath>
 #include <csetjmp>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
-#include <intrin.h>
 #include <x86intrin.h>
+
+#ifdef _WIN32
+#include <intrin.h>
+#else
+#include <xmmintrin.h>
+#include <smmintrin.h>
+#endif
 
 #define PPC_JOIN(x, y) x##y
 #define PPC_XSTRINGIFY(x) #x

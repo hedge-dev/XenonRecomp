@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <charconv>
 #include <disasm.h>
 #include <file.h>
@@ -14,4 +16,5 @@
 #include <xbox.h>
 #include <xxhash.h>
 #include <fmt/core.h>
+#include <xmmintrin.h>
 #include "generated/ppc_context.gen.h"

@@ -15,7 +15,7 @@ find_package(xxHash CONFIG REQUIRED)
 target_link_libraries(PowerRecomp PRIVATE LibPowerAnalyse fmt::fmt PkgConfig::tomlplusplus xxHash::xxhash)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(PowerRecomp PRIVATE -Wno-switch -Wno-unused-variable)
+    target_compile_options(PowerRecomp PRIVATE -Wno-switch -Wno-unused-variable -Wno-null-arithmetic)
 endif()
 
 target_compile_definitions(PowerRecomp PRIVATE _CRT_SECURE_NO_WARNINGS)

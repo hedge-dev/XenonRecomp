@@ -73,46 +73,46 @@ typedef struct _XEX_THUNK_DATA {
     {
         struct
         {
-            WORD Ordinal : 16;
-            WORD Hint : 8;
-            WORD Type : 8;
+            uint16_t Ordinal : 16;
+            uint16_t Hint : 8;
+            uint16_t Type : 8;
         } OriginalData;
 
-        XDWORD Ordinal;
-        XDWORD Function;
-        XDWORD AddressOfData;
+        be<uint32_t> Ordinal;
+        be<uint32_t> Function;
+        be<uint32_t> AddressOfData;
 
         // For easier swapping
-        DWORD Data;
+        uint32_t Data;
     };
 } XEX_THUNK_DATA;
 
 typedef struct _XEX_IMPORT_HEADER {
-    XDWORD SizeOfHeader;
-    XDWORD SizeOfStringTable;
-    XDWORD NumImports;
+    be<uint32_t> SizeOfHeader;
+    be<uint32_t> SizeOfStringTable;
+    be<uint32_t> NumImports;
 } XEX_IMPORT_HEADER;
 
 typedef struct _XEX_IMPORT_LIBRARY {
-    XDWORD Size;
+    be<uint32_t> Size;
     char NextImportDigest[0x14];
-    XDWORD ID;
-    XDWORD Version;
-    XDWORD MinVersion;
-    XWORD Name;
-    XWORD NumberOfImports;
+    be<uint32_t> ID;
+    be<uint32_t> Version;
+    be<uint32_t> MinVersion;
+    be<uint16_t> Name;
+    be<uint16_t> NumberOfImports;
 } XEX_IMPORT_LIBRARY;
 
 static_assert(sizeof(XEX_IMPORT_LIBRARY) == 0x28);
 
 typedef struct _XEX_IMPORT_DESCRIPTOR {
-    XDWORD FirstThunk; // VA XEX_THUNK_DATA
+    be<uint32_t> FirstThunk; // VA XEX_THUNK_DATA
 } XEX_IMPORT_DESCRIPTOR;
 
 typedef struct _XEX_OPTIONAL_HEADER
 {
-    XDWORD Type;
-    XDWORD Address;
+    be<uint32_t> Type;
+    be<uint32_t> Address;
 } XEX_OPTIONAL_HEADER;
 
 typedef struct _XEX2_SECURITY_INFO
