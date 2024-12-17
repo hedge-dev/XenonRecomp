@@ -364,7 +364,7 @@ int main()
 
         if (f.base == 0x82BD7420)
         {
-            __debugbreak();
+            __builtin_debugtrap();
         }
 
         image.symbols.emplace(fmt::format("sub_{:X}", f.base), f.base, f.size, Symbol_Function);

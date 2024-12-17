@@ -2,12 +2,13 @@
 
 project("PowerAnalyse")
 
-add_executable(PowerAnalyse "main.cpp" "function.h"  "function.cpp")
-add_library(LibPowerAnalyse "function.h"  "function.cpp")
-
-find_package(fmt CONFIG REQUIRED)
-
-target_include_directories(LibPowerAnalyse PUBLIC .)
-target_link_libraries(LibPowerAnalyse PUBLIC PowerUtils)
+add_executable(PowerAnalyse 
+    "main.cpp" 
+    "function.cpp")
 
 target_link_libraries(PowerAnalyse PRIVATE PowerUtils fmt::fmt)
+
+add_library(LibPowerAnalyse "function.cpp")
+target_include_directories(LibPowerAnalyse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(LibPowerAnalyse PUBLIC PowerUtils)
+

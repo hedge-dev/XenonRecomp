@@ -1,6 +1,5 @@
 cmake_minimum_required (VERSION 3.20)
 
-include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 set(THIRDPARTY_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -16,10 +15,10 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 include("cmake/bin2h.cmake")
 
-add_subdirectory(${THIRDPARTY_ROOT}/disasm)
+add_subdirectory(${THIRDPARTY_ROOT})
 set(POWERANALYSE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/PowerAnalyse)
-set(POWERRECOMP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/PowerRecomp)
 set(POWERUTILS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/PowerUtils)
+set(POWERRECOMP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/PowerRecomp)
 
 project ("PowerRecomp-ALL")
 
