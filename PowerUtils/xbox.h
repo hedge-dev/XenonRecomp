@@ -333,7 +333,7 @@ typedef struct _XCONTENT_DATA
 {
     be<uint32_t> DeviceID;
     be<uint32_t> dwContentType;
-    be<wchar_t> szDisplayName[XCONTENT_MAX_DISPLAYNAME];
+    be<uint16_t> szDisplayName[XCONTENT_MAX_DISPLAYNAME];
     char szFileName[XCONTENT_MAX_FILENAME];
 } XCONTENT_DATA, * PXCONTENT_DATA;
 
@@ -353,7 +353,7 @@ typedef struct _XDEVICE_DATA
     be<uint32_t> DeviceType;
     be<uint64_t> ulDeviceBytes;
     be<uint64_t> ulDeviceFreeBytes;
-    be<wchar_t> wszName[XCONTENTDEVICE_MAX_NAME];
+    be<uint16_t> wszName[XCONTENTDEVICE_MAX_NAME];
 } XDEVICE_DATA, *PXDEVICE_DATA;
 
 // Direct reflection of XInput structures
