@@ -14,6 +14,7 @@
 
 #include <bit>
 #include <cassert>
+#include <climits>
 #include <fstream>
 
 #include <aes.hpp>
