@@ -35,7 +35,7 @@ struct Recompiler
     size_t cppFileIndex = 0;
     RecompilerConfig config;
 
-    void LoadConfig(const std::string_view& configFilePath);
+    bool LoadConfig(const std::string_view& configFilePath);
 
     template<class... Args>
     void print(fmt::format_string<Args...> fmt, Args&&... args)

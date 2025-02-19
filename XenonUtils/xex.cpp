@@ -4,6 +4,7 @@
 #include <cstring>
 #include <vector>
 #include <unordered_map>
+#include <aes.hpp>
 
 #define STRINGIFY(X) #X
 #define XE_EXPORT(MODULE, ORDINAL, NAME, TYPE) { (ORDINAL), "__imp__" STRINGIFY(NAME) }
@@ -121,58 +122,80 @@ std::unordered_map<size_t, const char*> XboxKernelExports =
     #include "xbox/xboxkrnl_table.inc"
 };
 
-Image Xex2LoadImage(const uint8_t* data)
+Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
 {
-    auto* header = reinterpret_cast<const XEX_HEADER*>(data);
-    auto* security = reinterpret_cast<const XEX2_SECURITY_INFO*>(data + header->AddressOfSecurityInfo);
-
-    const auto* compressionInfo = Xex2FindOptionalHeader<XEX_FILE_FORMAT_INFO>(header, XEX_HEADER_FILE_FORMAT_INFO);
+    auto* header = reinterpret_cast<const Xex2Header*>(data);
+    auto* security = reinterpret_cast<const Xex2SecurityInfo*>(data + header->securityOffset);
+    const auto* fileFormatInfo = reinterpret_cast<const Xex2OptFileFormatInfo*>(getOptHeaderPtr(data, XEX_HEADER_FILE_FORMAT_INFO));
 
     Image image{};
     std::unique_ptr<uint8_t[]> result{};
-    size_t imageSize = security->SizeOfImage;
+    size_t imageSize = security->imageSize;
 
     // Decompress image
-    if (compressionInfo != nullptr)
+    if (fileFormatInfo != nullptr)
     {
-        assert(compressionInfo->CompressionType <= XEX_COMPRESSION_BASIC);
-        assert(compressionInfo->EncryptionType == XEX_ENCRYPTION_NONE);
+        assert(fileFormatInfo->compressionType <= XEX_COMPRESSION_BASIC);
 
-        if (compressionInfo->CompressionType == XEX_COMPRESSION_NONE)
+        std::unique_ptr<uint8_t[]> decryptedData;
+        const uint8_t* srcData = nullptr;
+
+        if (fileFormatInfo->encryptionType == XEX_ENCRYPTION_NORMAL)
+        {
+            constexpr uint32_t KeySize = 16;
+            AES_ctx aesContext;
+
+            uint8_t decryptedKey[KeySize];
+            memcpy(decryptedKey, security->aesKey, KeySize);
+            AES_init_ctx_iv(&aesContext, Xex2RetailKey, AESBlankIV);
+            AES_CBC_decrypt_buffer(&aesContext, decryptedKey, KeySize);
+
+            decryptedData = std::make_unique<uint8_t[]>(dataSize - header->headerSize);
+            memcpy(decryptedData.get(), data + header->headerSize, dataSize - header->headerSize);
+            AES_init_ctx_iv(&aesContext, decryptedKey, AESBlankIV);
+            AES_CBC_decrypt_buffer(&aesContext, decryptedData.get(), dataSize - header->headerSize);
+
+            srcData = decryptedData.get();
+        }
+        else
+        {
+            srcData = data + header->headerSize;
+        }
+
+        if (fileFormatInfo->compressionType == XEX_COMPRESSION_NONE)
         {
             result = std::make_unique<uint8_t[]>(imageSize);
-            memcpy(result.get(), data + header->SizeOfHeader, imageSize);
+            memcpy(result.get(), srcData, imageSize);
         }
-        else if (compressionInfo->CompressionType == XEX_COMPRESSION_BASIC)
+        else if (fileFormatInfo->compressionType == XEX_COMPRESSION_BASIC)
         {
-            auto* blocks = reinterpret_cast<const XEX_BASIC_FILE_COMPRESSION_INFO*>(compressionInfo + 1);
-            const size_t numBlocks = (compressionInfo->SizeOfHeader / sizeof(XEX_BASIC_FILE_COMPRESSION_INFO)) - 1;
+            auto* blocks = reinterpret_cast<const Xex2FileBasicCompressionBlock*>(fileFormatInfo + 1);
+            const size_t numBlocks = (fileFormatInfo->infoSize / sizeof(Xex2FileBasicCompressionInfo)) - 1;
 
             imageSize = 0;
             for (size_t i = 0; i < numBlocks; i++)
             {
-                imageSize += blocks[i].SizeOfData + blocks[i].SizeOfPadding;
+                imageSize += blocks[i].dataSize + blocks[i].zeroSize;
             }
 
             result = std::make_unique<uint8_t[]>(imageSize);
-            auto* srcData = data + header->SizeOfHeader;
             auto* destData = result.get();
 
             for (size_t i = 0; i < numBlocks; i++)
             {
-                memcpy(destData, srcData, blocks[i].SizeOfData);
+                memcpy(destData, srcData, blocks[i].dataSize);
 
-                srcData += blocks[i].SizeOfData;
-                destData += blocks[i].SizeOfData;
+                srcData += blocks[i].dataSize;
+                destData += blocks[i].dataSize;
 
-                memset(destData, 0, blocks[i].SizeOfPadding);
-                destData += blocks[i].SizeOfPadding;
+                memset(destData, 0, blocks[i].zeroSize);
+                destData += blocks[i].zeroSize;
             }
         }
     }
 
     image.data = std::move(result);
-    image.size = imageSize;
+    image.size = security->imageSize;
 
     // Map image
     const auto* dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(image.data.get());
@@ -198,22 +221,22 @@ Image Xex2LoadImage(const uint8_t* data)
             section.Misc.VirtualSize, flags, image.data.get() + section.VirtualAddress);
     }
 
-    auto* imports = Xex2FindOptionalHeader<XEX_IMPORT_HEADER>(header, XEX_HEADER_IMPORT_LIBRARIES);
+    auto* imports = reinterpret_cast<const Xex2ImportHeader*>(getOptHeaderPtr(data, XEX_HEADER_IMPORT_LIBRARIES));
     if (imports != nullptr)
     {
         std::vector<std::string_view> stringTable;
         auto* pStrTable = reinterpret_cast<const char*>(imports + 1);
 
-        for (size_t i = 0; i < imports->NumImports; i++)
+        for (size_t i = 0; i < imports->numImports; i++)
         {
             stringTable.emplace_back(pStrTable);
             pStrTable += strlen(pStrTable) + 1;
         }
 
-        auto* library = (XEX_IMPORT_LIBRARY*)(((char*)imports) + sizeof(XEX_IMPORT_HEADER) + imports->SizeOfStringTable);
+        auto* library = (Xex2ImportLibrary*)(((char*)imports) + sizeof(Xex2ImportHeader) + imports->sizeOfStringTable);
         for (size_t i = 0; i < stringTable.size(); i++)
         {
-            auto* descriptors = (XEX_IMPORT_DESCRIPTOR*)(library + 1);
+            auto* descriptors = (Xex2ImportDescriptor*)(library + 1);
             static std::unordered_map<size_t, const char*> DummyExports;
             const std::unordered_map<size_t, const char*>* names = &DummyExports;
 
@@ -226,25 +249,25 @@ Image Xex2LoadImage(const uint8_t* data)
                 names = &XboxKernelExports;
             }
 
-            for (size_t im = 0; im < library->NumberOfImports; im++)
+            for (size_t im = 0; im < library->numberOfImports; im++)
             {
-                auto originalThunk = (XEX_THUNK_DATA*)image.Find(descriptors[im].FirstThunk);
+                auto originalThunk = (Xex2ThunkData*)image.Find(descriptors[im].firstThunk);
                 auto originalData = originalThunk;
-                originalData->Data = ByteSwap(originalData->Data);
+                originalData->data = ByteSwap(originalData->data);
 
-                if (originalData->OriginalData.Type != 0)
+                if (originalData->originalData.type != 0)
                 {
                     uint32_t thunk[4] = { 0x00000060, 0x00000060, 0x00000060, 0x2000804E };
-                    auto name = names->find(originalData->OriginalData.Ordinal);
+                    auto name = names->find(originalData->originalData.ordinal);
                     if (name != names->end())
                     {
-                        image.symbols.insert({ name->second, descriptors[im].FirstThunk, sizeof(thunk), Symbol_Function });
+                        image.symbols.insert({ name->second, descriptors[im].firstThunk, sizeof(thunk), Symbol_Function });
                     }
 
                     memcpy(originalThunk, thunk, sizeof(thunk));
                 }
             }
-            library = (XEX_IMPORT_LIBRARY*)((char*)(library + 1) + library->NumberOfImports * sizeof(XEX_IMPORT_DESCRIPTOR));
+            library = (Xex2ImportLibrary*)((char*)(library + 1) + library->numberOfImports * sizeof(Xex2ImportDescriptor));
         }
     }
 

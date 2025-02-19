@@ -14,7 +14,9 @@ int main(int argc, char* argv[])
     if (std::filesystem::is_regular_file(path))
     {
         Recompiler recompiler;
-        recompiler.LoadConfig(path);
+        if (!recompiler.LoadConfig(path))
+            return -1;
+
         recompiler.Analyse();
 
         auto entry = recompiler.image.symbols.find(recompiler.image.entry_point);

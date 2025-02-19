@@ -2,18 +2,17 @@
 #include <memory>
 #include "xbox.h"
 
-#define XEX_COMPRESSION_NONE 0
-#define XEX_COMPRESSION_BASIC 1
+inline constexpr uint8_t Xex2RetailKey[16] = { 0x20, 0xB1, 0x85, 0xA5, 0x9D, 0x28, 0xFD, 0xC3, 0x40, 0x58, 0x3F, 0xBB, 0x08, 0x96, 0xBF, 0x91 };
+inline constexpr uint8_t AESBlankIV[16] = {};
 
-#define XEX_ENCRYPTION_NONE 0
-
-enum _XEX_THUNK_TYPES
+enum Xex2ModuleFlags
 {
-    XEX_THUNK_VARIABLE = 0,
-    XEX_THUNK_FUNCTION = 1,
+    XEX_MODULE_MODULE_PATCH = 0x10,
+    XEX_MODULE_PATCH_FULL = 0x20,
+    XEX_MODULE_PATCH_DELTA = 0x40,
 };
 
-enum _XEX_OPTIONAL_HEADER_TYPES
+enum Xex2HeaderKeys
 {
     XEX_HEADER_RESOURCE_INFO = 0x000002FF,
     XEX_HEADER_FILE_FORMAT_INFO = 0x000003FF,
@@ -47,118 +46,212 @@ enum _XEX_OPTIONAL_HEADER_TYPES
     XEX_HEADER_EXPORTS_BY_NAME = 0x00E10402,
 };
 
-typedef struct _XEX_FILE_FORMAT_INFO
+enum Xex2EncryptionType
 {
-    be<uint32_t> SizeOfHeader;
-    be<uint16_t> EncryptionType;
-    be<uint16_t> CompressionType;
-} XEX_FILE_FORMAT_INFO;
+    XEX_ENCRYPTION_NONE = 0,
+    XEX_ENCRYPTION_NORMAL = 1,
+};
 
-typedef struct _XEX_RESOURCE_INFO
+enum Xex2CompressionType
 {
-    be<uint32_t> SizeOfHeader;
-    uint8_t ResourceID[8];
-    be<uint32_t> Offset;
-    be<uint32_t> SizeOfData;
-} XEX_RESOURCE_INFO;
+    XEX_COMPRESSION_NONE = 0,
+    XEX_COMPRESSION_BASIC = 1,
+    XEX_COMPRESSION_NORMAL = 2,
+    XEX_COMPRESSION_DELTA = 3,
+};
 
-typedef struct _XEX_BASIC_FILE_COMPRESSION_INFO
+enum Xex2SectionType
 {
-    be<uint32_t> SizeOfData;
-    be<uint32_t> SizeOfPadding;
-} XEX_BASIC_FILE_COMPRESSION_INFO;
+    XEX_SECTION_CODE = 1,
+    XEX_SECTION_DATA = 2,
+    XEX_SECTION_READONLY_DATA = 3,
+};
 
-typedef struct _XEX_THUNK_DATA {
+enum Xex2ThunkTypes
+{
+    XEX_THUNK_VARIABLE = 0,
+    XEX_THUNK_FUNCTION = 1,
+};
+
+struct Xex2OptHeader
+{
+    be<uint32_t> key;
+
+    union
+    {
+        be<uint32_t> value;
+        be<uint32_t> offset;
+    };
+};
+
+struct Xex2Header
+{
+    be<uint32_t> magic;
+    be<uint32_t> moduleFlags;
+    be<uint32_t> headerSize;
+    be<uint32_t> reserved;
+    be<uint32_t> securityOffset;
+    be<uint32_t> headerCount;
+};
+
+struct Xex2PageDescriptor
+{
+    union
+    {
+        // Must be endian-swapped before reading the bitfield.
+        uint32_t beValue;
+        struct
+        {
+            uint32_t info : 4;
+            uint32_t pageCount : 28;
+        };
+    };
+
+    char dataDigest[0x14];
+};
+
+struct Xex2SecurityInfo
+{
+    be<uint32_t> headerSize;
+    be<uint32_t> imageSize;
+    char rsaSignature[0x100];
+    be<uint32_t> unknown;
+    be<uint32_t> imageFlags;
+    be<uint32_t> loadAddress;
+    char sectionDigest[0x14];
+    be<uint32_t> importTableCount;
+    char importTableDigest[0x14];
+    char xgd2MediaId[0x10];
+    char aesKey[0x10];
+    be<uint32_t> exportTable;
+    char headerDigest[0x14];
+    be<uint32_t> region;
+    be<uint32_t> allowedMediaTypes;
+    be<uint32_t> pageDescriptorCount;
+};
+
+struct Xex2DeltaPatch
+{
+    be<uint32_t> oldAddress;
+    be<uint32_t> newAddress;
+    be<uint16_t> uncompressedLength;
+    be<uint16_t> compressedLength;
+    char patchData[1];
+};
+
+struct Xex2OptDeltaPatchDescriptor
+{
+    be<uint32_t> size;
+    be<uint32_t> targetVersionValue;
+    be<uint32_t> sourceVersionValue;
+    uint8_t digestSource[0x14];
+    uint8_t imageKeySource[0x10];
+    be<uint32_t> sizeOfTargetHeaders;
+    be<uint32_t> deltaHeadersSourceOffset;
+    be<uint32_t> deltaHeadersSourceSize;
+    be<uint32_t> deltaHeadersTargetOffset;
+    be<uint32_t> deltaImageSourceOffset;
+    be<uint32_t> deltaImageSourceSize;
+    be<uint32_t> deltaImageTargetOffset;
+    Xex2DeltaPatch info;
+};
+
+struct Xex2FileBasicCompressionBlock
+{
+    be<uint32_t> dataSize;
+    be<uint32_t> zeroSize;
+};
+
+struct Xex2FileBasicCompressionInfo
+{
+    Xex2FileBasicCompressionBlock firstBlock;
+};
+
+struct Xex2CompressedBlockInfo
+{
+    be<uint32_t> blockSize;
+    uint8_t blockHash[20];
+};
+
+struct Xex2FileNormalCompressionInfo
+{
+    be<uint32_t> windowSize;
+    Xex2CompressedBlockInfo firstBlock;
+};
+
+struct Xex2OptFileFormatInfo
+{
+    be<uint32_t> infoSize;
+    be<uint16_t> encryptionType;
+    be<uint16_t> compressionType;
+};
+
+struct Xex2ImportHeader
+{
+    be<uint32_t> sizeOfHeader;
+    be<uint32_t> sizeOfStringTable;
+    be<uint32_t> numImports;
+};
+
+struct Xex2ImportLibrary 
+{
+    be<uint32_t> size;
+    char nextImportDigest[0x14];
+    be<uint32_t> id;
+    be<uint32_t> version;
+    be<uint32_t> minVersion;
+    be<uint16_t> name;
+    be<uint16_t> numberOfImports;
+};
+
+struct Xex2ImportDescriptor 
+{
+    be<uint32_t> firstThunk; // VA XEX_THUNK_DATA
+};
+
+struct Xex2ThunkData 
+{
     union
     {
         struct
         {
-            uint16_t Ordinal : 16;
-            uint16_t Hint : 8;
-            uint16_t Type : 8;
-        } OriginalData;
+            uint16_t ordinal : 16;
+            uint16_t hint : 8;
+            uint16_t type : 8;
+        } originalData;
 
-        be<uint32_t> Ordinal;
-        be<uint32_t> Function;
-        be<uint32_t> AddressOfData;
+        be<uint32_t> ordinal;
+        be<uint32_t> function;
+        be<uint32_t> addressOfData;
 
         // For easier swapping
-        uint32_t Data;
+        uint32_t data;
     };
-} XEX_THUNK_DATA;
+};
 
-typedef struct _XEX_IMPORT_HEADER {
-    be<uint32_t> SizeOfHeader;
-    be<uint32_t> SizeOfStringTable;
-    be<uint32_t> NumImports;
-} XEX_IMPORT_HEADER;
-
-typedef struct _XEX_IMPORT_LIBRARY {
-    be<uint32_t> Size;
-    char NextImportDigest[0x14];
-    be<uint32_t> ID;
-    be<uint32_t> Version;
-    be<uint32_t> MinVersion;
-    be<uint16_t> Name;
-    be<uint16_t> NumberOfImports;
-} XEX_IMPORT_LIBRARY;
-
-static_assert(sizeof(XEX_IMPORT_LIBRARY) == 0x28);
-
-typedef struct _XEX_IMPORT_DESCRIPTOR {
-    be<uint32_t> FirstThunk; // VA XEX_THUNK_DATA
-} XEX_IMPORT_DESCRIPTOR;
-
-typedef struct _XEX_OPTIONAL_HEADER
+struct Xex2ResourceInfo
 {
-    be<uint32_t> Type;
-    be<uint32_t> Address;
-} XEX_OPTIONAL_HEADER;
+    be<uint32_t> sizeOfHeader;
+    uint8_t resourceID[8];
+    be<uint32_t> offset;
+    be<uint32_t> sizeOfData;
+};
 
-typedef struct _XEX2_SECURITY_INFO
+inline const void* getOptHeaderPtr(const uint8_t* moduleBytes, uint32_t headerKey)
 {
-    be<uint32_t> SizeOfHeader;
-    be<uint32_t> SizeOfImage;
-    char RsaSignature[0x100];
-    be<uint32_t> Unknown108;
-    be<uint32_t> ImageFlags;
-    be<uint32_t> ImageBase;
-    char SectionDigest[0x14];
-    be<uint32_t> NumberOfImports;
-    char ImportsDigest[0x14];
-    char Xgd2MediaID[0x10];
-    char AesKey[0x10];
-    be<uint32_t> AddressOfExports;
-    char HeaderDigest[0x14];
-    be<uint32_t> Region;
-    be<uint32_t> AllowedMediaTypes;
-    be<uint32_t> NumberOfPageDescriptors;
-} XEX2_SECURITY_INFO;
-
-typedef struct _XEX_HEADER
-{
-    char Signature[4];
-    be<uint32_t> Flags;
-    be<uint32_t> SizeOfHeader;
-    char Reserved[4];
-    be<uint32_t> AddressOfSecurityInfo;
-    be<uint32_t> NumberOfOptionalHeaders;
-} XEX_HEADER;
-
-template<typename T>
-inline static const T* Xex2FindOptionalHeader(const void* base, const XEX_OPTIONAL_HEADER* headers, size_t n, _XEX_OPTIONAL_HEADER_TYPES type)
-{
-    for (size_t i = 0; i < n; i++)
+    const Xex2Header* xex2Header = (const Xex2Header*)(moduleBytes);
+    for (uint32_t i = 0; i < xex2Header->headerCount; i++)
     {
-        if (headers[i].Type == (uint32_t)type)
+        const Xex2OptHeader& optHeader = ((const Xex2OptHeader*)(xex2Header + 1))[i];
+        if (optHeader.key == headerKey)
         {
-            if ((type & 0xFF) == 0)
+            if ((headerKey & 0xFF) == 0)
             {
-                return reinterpret_cast<const T*>(&headers[i].Address);
+                return &optHeader.value;
             }
             else
             {
-                return reinterpret_cast<const T*>(static_cast<const char*>(base) + headers[i].Address);
+                return &moduleBytes[optHeader.offset];
             }
         }
     }
@@ -166,11 +259,5 @@ inline static const T* Xex2FindOptionalHeader(const void* base, const XEX_OPTION
     return nullptr;
 }
 
-template<typename T>
-inline static const T* Xex2FindOptionalHeader(const XEX_HEADER* header, _XEX_OPTIONAL_HEADER_TYPES type)
-{
-    return Xex2FindOptionalHeader<T>(header, (XEX_OPTIONAL_HEADER*)(header + 1), header->NumberOfOptionalHeaders, type);
-}
-
 struct Image;
-Image Xex2LoadImage(const uint8_t* data);
+Image Xex2LoadImage(const uint8_t* data, size_t dataSize);

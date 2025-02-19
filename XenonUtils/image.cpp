@@ -37,7 +37,7 @@ Image Image::ParseImage(const uint8_t* data, size_t size)
     }
     else if (data[0] == 'X' && data[1] == 'E' && data[2] == 'X' && data[3] == '2')
     {
-        return Xex2LoadImage(data);
+        return Xex2LoadImage(data, size);
     }
 
     return {};

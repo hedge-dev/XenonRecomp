@@ -7,3 +7,9 @@
 [submodule "thirdparty/tomlplusplus"]
 	path = thirdparty/tomlplusplus
 	url = https://github.com/marzer/tomlplusplus.git
+[submodule "thirdparty/libmspack"]
+	path = thirdparty/libmspack
+	url = https://github.com/kyz/libmspack
+[submodule "thirdparty/tiny-AES-c"]
+	path = thirdparty/tiny-AES-c
+	url = https://github.com/kokke/tiny-AES-c.git

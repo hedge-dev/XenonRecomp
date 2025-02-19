@@ -13,6 +13,8 @@ void RecompilerConfig::Load(const std::string_view& configFilePath)
     {
         const auto& main = *mainPtr;
         filePath = main["file_path"].value_or<std::string>("");
+        patchFilePath = main["patch_file_path"].value_or<std::string>("");
+        patchedFilePath = main["patched_file_path"].value_or<std::string>("");
         outDirectoryPath = main["out_directory_path"].value_or<std::string>("");
         switchTableFilePath = main["switch_table_file_path"].value_or<std::string>("");
 

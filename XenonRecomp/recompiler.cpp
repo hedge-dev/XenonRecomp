@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "recompiler.h"
+#include <xex_patcher.h>
 
 static uint64_t ComputeMask(uint32_t mstart, uint32_t mstop)
 {
@@ -9,12 +10,87 @@ static uint64_t ComputeMask(uint32_t mstart, uint32_t mstop)
     return mstart <= mstop ? value : ~value;
 }
 
-void Recompiler::LoadConfig(const std::string_view& configFilePath)
+bool Recompiler::LoadConfig(const std::string_view& configFilePath)
 {
     config.Load(configFilePath);
 
-    const auto file = LoadFile((config.directoryPath + config.filePath).c_str());
+    std::vector<uint8_t> file;
+    if (!config.patchedFilePath.empty())
+        file = LoadFile((config.directoryPath + config.patchedFilePath).c_str());
+
+    if (file.empty())
+    {
+        file = LoadFile((config.directoryPath + config.filePath).c_str());
+
+        if (!config.patchFilePath.empty())
+        {
+            const auto patchFile = LoadFile((config.directoryPath + config.patchFilePath).c_str());
+            if (!patchFile.empty())
+            {
+                std::vector<uint8_t> outBytes;
+                auto result = XexPatcher::apply(file.data(), file.size(), patchFile.data(), patchFile.size(), outBytes, false);
+                if (result == XexPatcher::Result::Success)
+                {
+                    std::exchange(file, outBytes);
+
+                    if (!config.patchedFilePath.empty())
+                    {
+                        std::ofstream stream(config.directoryPath + config.patchedFilePath, std::ios::binary);
+                        if (stream.good())
+                        {
+                            stream.write(reinterpret_cast<const char*>(file.data()), file.size());
+                            stream.close();
+                        }
+                    }
+                }
+                else
+                {
+                    fmt::print("ERROR: Unable to apply the patch file, ");
+
+                    switch (result)
+                    {
+                    case XexPatcher::Result::XexFileUnsupported:
+                        fmt::println("XEX file unsupported");
+                        break;
+
+                    case XexPatcher::Result::XexFileInvalid:
+                        fmt::println("XEX file invalid");
+                        break;
+
+                    case XexPatcher::Result::PatchFileInvalid:
+                        fmt::println("patch file invalid");
+                        break;
+
+                    case XexPatcher::Result::PatchIncompatible:
+                        fmt::println("patch file incompatible");
+                        break;
+
+                    case XexPatcher::Result::PatchFailed:
+                        fmt::println("patch failed");
+                        break;
+
+                    case XexPatcher::Result::PatchUnsupported:
+                        fmt::println("patch unsupported");
+                        break;
+
+                    default:
+                        fmt::println("reason unknown");
+                        break;
+                    }
+
+                    return false;
+                }
+            }
+            else
+            {
+                fmt::println("ERROR: Unable to load the patch file");
+                return false;
+            }
+        }
+    }
+
     image = Image::ParseImage(file.data(), file.size());
+    return true;
 }
 
 void Recompiler::Analyse()
