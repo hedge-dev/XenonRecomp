@@ -51,7 +51,7 @@ void TestRecompiler::RecompileTests(const char* srcDirectoryPath, const char* ds
 
             recompiler.println("#define PPC_CONFIG_H_INCLUDED");
             recompiler.println("#include <ppc_context.h>\n");
-            recompiler.println("#define __debugbreak()\n");
+            recompiler.println("#define __builtin_debugtrap()\n");
 
             for (auto& fn : recompiler.functions)
             {
@@ -102,8 +102,12 @@ void TestRecompiler::RecompileTests(const char* srcDirectoryPath, const char* ds
 
     fmt::println(file, "#define PPC_CONFIG_H_INCLUDED");
     fmt::println(file, "#include <ppc_context.h>");
+    fmt::println(file, "#ifdef _WIN32");
     fmt::println(file, "#include <Windows.h>");
-    fmt::println(file, "#include <print>\n");
+    fmt::println(file, "#else");
+    fmt::println(file, "#include <sys/mman.h>");
+    fmt::println(file, "#endif");
+    fmt::println(file, "#include <fmt/core.h>\n");
     fmt::println(file, "#define PPC_CHECK_VALUE_U(f, lhs, rhs) if (lhs != rhs) fmt::println(#f \" \" #lhs \" EXPECTED \" #rhs \" ACTUAL {{:X}}\", lhs)\n");
     fmt::println(file, "#define PPC_CHECK_VALUE_F(f, lhs, rhs) if (lhs != rhs) fmt::println(#f \" \" #lhs \" EXPECTED \" #rhs \" ACTUAL {{}}\", lhs)\n");
 
@@ -274,7 +278,11 @@ void TestRecompiler::RecompileTests(const char* srcDirectoryPath, const char* ds
     }
 
     fmt::println(file, "int main() {{");
-    fmt::println(file, "\tuint8_t* base = reinterpret_cast<uint8_t*>(VirtualAlloc(nullptr, 0x100000000, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE));");
+    fmt::println(file, "#ifdef _WIN32");
+    fmt::println(file, "\tuint8_t* base = reinterpret_cast<uint8_t*>(VirtualAlloc(nullptr, 0x100000000ull, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE));");
+    fmt::println(file, "#else");
+    fmt::println(file, "\tuint8_t* base = reinterpret_cast<uint8_t*>(mmap(NULL, 0x100000000ull, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0));");
+    fmt::println(file, "#endif");
     fwrite(main.data(), 1, main.size(), file);
     fmt::println(file, "\treturn 0;");
     fmt::println(file, "}}");

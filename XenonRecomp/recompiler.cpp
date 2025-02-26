@@ -2578,7 +2578,11 @@ void Recompiler::SaveCurrentOutData(const std::string_view& name)
         bool shouldWrite = true;
 
         // Check if an identical file already exists first to not trigger recompilation
-        std::string filePath = fmt::format("{}/{}/{}", config.directoryPath, config.outDirectoryPath, name.empty() ? cppName : name);
+        std::string directoryPath = config.directoryPath;
+        if (!directoryPath.empty())
+            directoryPath += "/";
+
+        std::string filePath = fmt::format("{}{}/{}", directoryPath, config.outDirectoryPath, name.empty() ? cppName : name);
         FILE* f = fopen(filePath.c_str(), "rb");
         if (f)
         {

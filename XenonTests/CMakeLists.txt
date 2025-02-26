@@ -1,13 +1,20 @@
 project("XenonTests")
 
-add_compile_options(
-    "-march=x86-64-v3"
-    "-Wno-unused-label"
-    "-Wno-unused-variable")
+file(GLOB TEST_FILES *.cpp)
 
-file(GLOB TestFiles *.cpp)
-
-if(TestFiles)
-    add_executable(XenonTests ${TestFiles})
-    target_link_libraries(XenonTests PUBLIC XenonUtils)
+if(TEST_FILES)
+    add_executable(XenonTests 
+        ${TEST_FILES}
+    )
+    target_link_libraries(XenonTests 
+        PUBLIC 
+            XenonUtils
+            fmt::fmt
+    )
+    target_compile_options(XenonTests
+        PRIVATE 
+            "-march=sandybridge"
+            "-Wno-unused-label"
+            "-Wno-unused-variable"
+    )
 endif()

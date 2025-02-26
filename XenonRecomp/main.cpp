@@ -3,6 +3,14 @@
 
 int main(int argc, char* argv[])
 {
+#ifndef XENON_RECOMP_CONFIG_FILE_PATH
+    if (argc < 3)
+    {
+        printf("Usage: XenonRecomp [input TOML file path] [PPC context header file path]");
+        return EXIT_SUCCESS;
+    }
+#endif
+
     const char* path = 
     #ifdef XENON_RECOMP_CONFIG_FILE_PATH
         XENON_RECOMP_CONFIG_FILE_PATH
@@ -40,5 +48,5 @@ int main(int argc, char* argv[])
         TestRecompiler::RecompileTests(path, argv[2]);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
