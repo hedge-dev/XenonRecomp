@@ -24,11 +24,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        c_compiler: [clang, cl]
+        c_compiler: [clang, clang-cl]
         include:
           - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
+            c_compiler: clang-cl
+            cpp_compiler: clang-cl
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
@@ -36,7 +36,7 @@ jobs:
           - os: windows-latest
             c_compiler: clang
           - os: ubuntu-latest
-            c_compiler: cl
+            c_compiler: clang-cl
           
 
     steps:
@@ -51,6 +51,22 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Clang-Cl on Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        echo "Setting up Clang-Cl..."
+        echo "CC=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        echo "CXX=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        echo "Using Clang Version:"
+        clang-cl --version
+
+    - name: Install Ninja on Windows
+      if: runner.os == 'Windows'
+      run: |
+        choco install ninja --no-progress
+      shell: pwsh
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
