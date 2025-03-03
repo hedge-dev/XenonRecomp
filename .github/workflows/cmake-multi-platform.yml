@@ -72,16 +72,16 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         mkdir -p artifacts
-        cp build/XenonRecompiler/XenonRecompiler artifacts/
-        cp build/XenonAnalyse/XenonAnalyse artifacts/
+        cp build/XenonRecompiler artifacts/
+        cp build/XenonAnalyse artifacts/
       shell: bash
 
     - name: Package Artifacts (Windows)
       if: runner.os == 'Windows'
       run: |
         New-Item -ItemType Directory -Path artifacts
-        Copy-Item -Path build\XenonRecompiler\XenonRecompiler.exe -Destination artifacts\
-        Copy-Item -Path build\XenonAnalyse\XenonAnalyse.exe -Destination artifacts\
+        Copy-Item -Path build\XenonRecompiler.exe -Destination artifacts\
+        Copy-Item -Path build\XenonAnalyse.exe -Destination artifacts\
       shell: powershell
 
     - name: Upload Artifacts
