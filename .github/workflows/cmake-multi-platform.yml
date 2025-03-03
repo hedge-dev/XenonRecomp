@@ -68,11 +68,22 @@ jobs:
       run: cmake --build build --config ${{ matrix.build_type }}
       shell: powershell
 
+    - name: Show Build Directory (Linux)
+      if: runner.os == 'Linux'
+      run: tree -L 3 build
+      shell: bash
+
+    - name: Show Build Directory (Windows)
+      if: runner.os == 'Windows'
+      run: Get-ChildItem -Path build -Recurse
+      shell: powershell
+
+
     - name: Package Artifacts (Linux)
       if: runner.os == 'Linux'
       run: |
         mkdir -p artifacts
-        cp build/XenonRecompiler artifacts/
+        cp build/XenonRecomp artifacts/
         cp build/XenonAnalyse artifacts/
       shell: bash
 
@@ -80,7 +91,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         New-Item -ItemType Directory -Path artifacts
-        Copy-Item -Path build\XenonRecompiler.exe -Destination artifacts\
+        Copy-Item -Path build\XenonRecomp.exe -Destination artifacts\
         Copy-Item -Path build\XenonAnalyse.exe -Destination artifacts\
       shell: powershell
 
