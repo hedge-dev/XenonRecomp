@@ -68,14 +68,24 @@ jobs:
       run: cmake --build build --config ${{ matrix.build_type }}
       shell: powershell
 
-    - name: Test (Linux)
+    - name: Package Artifacts (Linux)
       if: runner.os == 'Linux'
-      working-directory: build
-      run: ctest --build-config ${{ matrix.build_type }}
+      run: |
+        mkdir -p artifacts
+        cp build/XenonRecompiler/XenonRecompiler artifacts/
+        cp build/XenonAnalyse/XenonAnalyse artifacts/
       shell: bash
 
-    - name: Test (Windows)
+    - name: Package Artifacts (Windows)
       if: runner.os == 'Windows'
-      working-directory: build
-      run: ctest --build-config ${{ matrix.build_type }}
+      run: |
+        New-Item -ItemType Directory -Path artifacts
+        Copy-Item -Path build\XenonRecompiler\XenonRecompiler.exe -Destination artifacts\
+        Copy-Item -Path build\XenonAnalyse\XenonAnalyse.exe -Destination artifacts\
       shell: powershell
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: XenonBinaries-${{ matrix.os }}
+        path: artifacts/*
