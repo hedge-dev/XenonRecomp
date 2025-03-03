@@ -58,6 +58,16 @@ jobs:
         -S .
       shell: powershell
 
+    - name: Show CMake Directory (Linux)
+      if: runner.os == 'Linux'
+      run: tree -L 3 .
+      shell: bash
+
+    - name: Show CMake Directory (Windows)
+      if: runner.os == 'Windows'
+      run: Get-ChildItem -Path . -Recurse
+      shell: powershell
+
     - name: Build
       run: ninja
 
