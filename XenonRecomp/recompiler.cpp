@@ -2334,7 +2334,10 @@ bool Recompiler::Recompile(const Function& fn)
         name = fmt::format("sub_{}", fn.base);
     }
 
+#ifdef XENON_RECOMP_USE_ALIAS
     println("__attribute__((alias(\"__imp__{}\"))) PPC_WEAK_FUNC({});", name, name);
+#endif
+
     println("PPC_FUNC_IMPL(__imp__{}) {{", name);
     println("\tPPC_FUNC_PROLOGUE();");
 
@@ -2394,6 +2397,12 @@ bool Recompiler::Recompile(const Function& fn)
 #endif
 
     println("}}\n");
+
+#ifndef XENON_RECOMP_USE_ALIAS
+    println("PPC_WEAK_FUNC({}) {{", name);
+    println("\t__imp__{}(ctx, base);", name);
+    println("}}\n");
+#endif
 
     std::swap(out, tempString);
     if (localVariables.ctr)

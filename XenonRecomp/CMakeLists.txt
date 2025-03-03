@@ -19,6 +19,11 @@ target_link_libraries(XenonRecomp PRIVATE
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(XenonRecomp PRIVATE -Wno-switch -Wno-unused-variable -Wno-null-arithmetic)
+
+    # alias attribute not supported on Apple.
+    if (NOT APPLE)
+        target_compile_definitions(XenonRecomp PRIVATE XENON_RECOMP_USE_ALIAS)
+    endif()
 endif()
 
 target_compile_definitions(XenonRecomp PRIVATE _CRT_SECURE_NO_WARNINGS)
