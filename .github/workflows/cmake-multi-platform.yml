@@ -5,7 +5,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -37,21 +36,46 @@ jobs:
       run: choco install ninja
       shell: powershell
 
-    - name: Configure CMake
+    - name: Configure CMake (Linux)
+      if: runner.os == 'Linux'
       run: >
-        cmake -B ${{ github.workspace }}/build
+        cmake -B build
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -G Ninja
-        -S ${{ github.workspace }}
+        -S .
       shell: bash
 
-    - name: Build
-      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      run: >
+        cmake -B build
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -G Ninja
+        -S .
+      shell: powershell
+
+    - name: Build (Linux)
+      if: runner.os == 'Linux'
+      run: cmake --build build --config ${{ matrix.build_type }}
       shell: bash
 
-    - name: Test
-      working-directory: ${{ github.workspace }}/build
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
+      run: cmake --build build --config ${{ matrix.build_type }}
+      shell: powershell
+
+    - name: Test (Linux)
+      if: runner.os == 'Linux'
+      working-directory: build
       run: ctest --build-config ${{ matrix.build_type }}
       shell: bash
+
+    - name: Test (Windows)
+      if: runner.os == 'Windows'
+      working-directory: build
+      run: ctest --build-config ${{ matrix.build_type }}
+      shell: powershell
