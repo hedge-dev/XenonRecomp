@@ -58,24 +58,19 @@ jobs:
         -S .
       shell: powershell
 
-    - name: Build (Linux)
-      if: runner.os == 'Linux'
-      run: cmake --build build --config ${{ matrix.build_type }}
-      shell: bash
+    - name: Build
+      run: ninja
 
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
-      run: cmake --build build --config ${{ matrix.build_type }}
-      shell: powershell
+
 
     - name: Show Build Directory (Linux)
       if: runner.os == 'Linux'
-      run: tree -L 3 build
+      run: tree -L 3 .
       shell: bash
 
     - name: Show Build Directory (Windows)
       if: runner.os == 'Windows'
-      run: Get-ChildItem -Path build -Recurse
+      run: Get-ChildItem -Path . -Recurse
       shell: powershell
 
 
