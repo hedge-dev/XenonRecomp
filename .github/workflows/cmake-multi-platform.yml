@@ -1,7 +1,10 @@
 name: CMake with Clang and Ninja
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
+
 
 jobs:
   build:
@@ -10,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        build_type: [Release, Debug]
+        build_type: [Debug]
         include:
           - os: windows-latest
             c_compiler: clang-cl
