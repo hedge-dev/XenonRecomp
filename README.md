@@ -252,6 +252,7 @@ The project requires CMake 3.20 or later and Clang 18 or later to build. Since t
 Compilers other than Clang have not been tested and are not recommended, including for recompilation output. The project relies on compiler-specific intrinsics and techniques that may not function correctly on other compilers, and many optimization methods depend on Clang's code generation.
 
 On Windows, you can use the clang-cl toolset and open the project in Visual Studio's CMake integration.
+
 On Linux, you can build via the following commands after creating and entering the `build` directory:
 ```
 cmake -S .. -B . -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang -DCMAKE_EXE_LINKER_FLAGS="-lstdc++"
