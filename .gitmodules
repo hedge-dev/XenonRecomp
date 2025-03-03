@@ -13,3 +13,6 @@
 [submodule "thirdparty/tiny-AES-c"]
 	path = thirdparty/tiny-AES-c
 	url = https://github.com/kokke/tiny-AES-c.git
+[submodule "thirdparty/simde"]
+	path = thirdparty/simde
+	url = https://github.com/simd-everywhere/simde-no-tests.git
