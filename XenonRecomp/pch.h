@@ -17,6 +17,6 @@
 #include <xxhash.h>
 #include <fmt/core.h>
 
-# define SIMDE_ENABLE_NATIVE_ALIASES
+#define SIMDE_ENABLE_NATIVE_ALIASES
 
 #include <x86/sse.h>

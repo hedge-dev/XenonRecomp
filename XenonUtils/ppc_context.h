@@ -12,14 +12,9 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <x86intrin.h>
-
-#ifdef _WIN32
-#include <intrin.h>
-#else
-#include <xmmintrin.h>
-#include <smmintrin.h>
-#endif
+#define SIMDE_ENABLE_NATIVE_ALIASES
+#include <x86/sse.h>
+#include <x86/sse4.1.h>
 
 #define PPC_JOIN(x, y) x##y
 #define PPC_XSTRINGIFY(x) #x
