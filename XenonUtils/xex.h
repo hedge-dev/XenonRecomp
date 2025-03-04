@@ -3,6 +3,7 @@
 #include "xbox.h"
 
 inline constexpr uint8_t Xex2RetailKey[16] = { 0x20, 0xB1, 0x85, 0xA5, 0x9D, 0x28, 0xFD, 0xC3, 0x40, 0x58, 0x3F, 0xBB, 0x08, 0x96, 0xBF, 0x91 };
+inline constexpr uint8_t Xex2DevkitKey[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 inline constexpr uint8_t AESBlankIV[16] = {};
 
 enum Xex2ModuleFlags
@@ -184,6 +185,19 @@ struct Xex2OptFileFormatInfo
     be<uint32_t> infoSize;
     be<uint16_t> encryptionType;
     be<uint16_t> compressionType;
+};
+
+struct Xex2OptExecutionInfo
+{
+    be<uint32_t> mediaId;
+    be<uint32_t> version;
+    be<uint32_t> versionBase;
+    be<uint32_t> titleId;
+    uint8_t platform;
+    uint8_t executableTable;
+    uint8_t discNumber;
+    uint8_t discTotal;
+    be<uint32_t> savedGameId;
 };
 
 struct Xex2ImportHeader
