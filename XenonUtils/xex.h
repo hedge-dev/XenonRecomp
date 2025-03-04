@@ -218,10 +218,20 @@ struct Xex2ImportLibrary
     be<uint16_t> numberOfImports;
 };
 
+// https://github.com/emoose/idaxex/blob/198b1d52414d35926644bbeec607b3feac5f44e7/formats/pe_structs.hpp#L140-L150
 struct Xex2ImportDescriptor 
 {
-    be<uint32_t> firstThunk; // VA XEX_THUNK_DATA
+    union
+    {
+        be<uint32_t> characteristics;
+        be<uint32_t> originalFirstThunk;
+    };
+    be<uint32_t> timeDateStamp;
+    be<uint32_t> forwarderChainId;
+    be<uint32_t> moduleName;
+    be<uint32_t> firstThunk;
 };
+static_assert(sizeof(Xex2ImportDescriptor) == 0x14, "Xex2ImportDescriptor");
 
 struct Xex2ThunkData 
 {
