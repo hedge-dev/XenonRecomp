@@ -155,16 +155,16 @@ savevmx_64_address = 0x831B34E4
 
 Xbox 360 binaries feature specialized register restore & save functions that act similarly to switch case fallthroughs. Every function that utilizes non-volatile registers either has an inlined version of these functions or explicitly calls them. The recompiler requires the starting address of each restore/save function in the TOML file to recompile them correctly. These functions could likely be auto-detected, but there is currently no mechanism for it.
 
-Property|Description
--|-
-restgprlr_14_address|Start address of the `__restgprlr_14` function. It starts with `ld r14, -0x98(r1)`, repeating the same operation for the rest of the non-volatile registers and restoring the link register at the end.
-savegprlr_14_address|Start address of the `__savegprlr_14` function. It starts with `std r14, -0x98(r1)`, repeating the same operation for the rest of the non-volatile registers and saving the link register at the end.
-restfpr_14_address|Start address of the `__restfpr_14` function. It starts with `lfd f14, -0x90(r12)`, repeating the same operation for the rest of the non-volatile FPU registers.
-savefpr_14_address|Start address of the `__savefpr_14` function. It starts with `stfd r14, -0x90(r12)`, repeating the same operation for the rest of the non-volatile FPU registers.
-restvmx_14_address|Start address of the `__restvmx_14` function. It starts with `li r11, -0x120` and `lvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.
-savevmx_14_address|Start address of the `__savevmx_14` function. It starts with `li r11, -0x120` and `stvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.
-restvmx_64_address|Start address of the `__restvmx_64` function. It starts with `li r11, -0x400` and `lvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.
-savevmx_64_address|Start address of the `__savevmx_64` function. It starts with `li r11, -0x400` and `stvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.
+Property|Description|Byte Pattern
+-|-|-
+restgprlr_14_address|Start address of the `__restgprlr_14` function. It starts with `ld r14, -0x98(r1)`, repeating the same operation for the rest of the non-volatile registers and restoring the link register at the end.|`e9 c1 ff 68`
+savegprlr_14_address|Start address of the `__savegprlr_14` function. It starts with `std r14, -0x98(r1)`, repeating the same operation for the rest of the non-volatile registers and saving the link register at the end.|`f9 c1 ff 68`
+restfpr_14_address|Start address of the `__restfpr_14` function. It starts with `lfd f14, -0x90(r12)`, repeating the same operation for the rest of the non-volatile FPU registers.|`c9 cc ff 70`
+savefpr_14_address|Start address of the `__savefpr_14` function. It starts with `stfd r14, -0x90(r12)`, repeating the same operation for the rest of the non-volatile FPU registers.|`d9 cc ff 70`
+restvmx_14_address|Start address of the `__restvmx_14` function. It starts with `li r11, -0x120` and `lvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.|`39 60 fe e0`
+savevmx_14_address|Start address of the `__savevmx_14` function. It starts with `li r11, -0x120` and `stvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.|`39 60 fe e0`
+restvmx_64_address|Start address of the `__restvmx_64` function. It starts with `li r11, -0x400` and `lvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.|`39 60 fc 00`
+savevmx_64_address|Start address of the `__savevmx_64` function. It starts with `li r11, -0x400` and `stvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.|`39 60 fc 00`
 
 #### longjmp & setjmp
 
