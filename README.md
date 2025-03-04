@@ -263,7 +263,7 @@ On Windows, you can use the clang-cl toolset and open the project in Visual Stud
 
 Alternatively, you can install [MSYS2](https://www.msys2.org/) and use the "MSYS2 CLANG64" environment to build the project.
 
-First, you need to install the necessary packages (`mingw-w64-clang-x86_64-cmake`, `mingw-w64-clang-x86_64-libc++` and `mingw-w64-x86_64-ninja`) with `pacman -S <package_name>`.
+First, you need to install the necessary packages (`mingw-w64-clang-x86_64-cmake`, `mingw-w64-clang-x86_64-libc++`, `mingw-w64-clang-x86_64-clang` and `mingw-w64-x86_64-ninja`) with `pacman -S <package_name>`.
 
 Then, you can head into the cloned repo's directory (you can access your C drive by going into the `/c` folder inside of MSYS2), and execute the command `cmake -DCMAKE_BUILD_TYPE=Debug .`, which will generate a `build.ninja` file for the project.
 
