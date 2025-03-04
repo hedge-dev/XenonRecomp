@@ -1,4 +1,4 @@
-name: CMake with Clang and Ninja
+name: Build stuff
 
 on:
   push:
