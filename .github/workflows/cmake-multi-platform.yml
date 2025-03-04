@@ -93,13 +93,13 @@ jobs:
     - name: Download Linux Build Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: XenonBinaries-Linux
+        name: XenonBinaries-ubuntu-latest
         path: artifacts
 
     - name: Download Windows Build Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: XenonBinaries-Windows
+        name: XenonBinaries-windows-latest
         path: artifacts
 
     - name: Create GitHub Release
