@@ -99,48 +99,72 @@ void Recompiler::Analyse()
     {
         if (i < 32)
         {
-            auto& restgpr = functions.emplace_back();
-            restgpr.base = config.restGpr14Address + (i - 14) * 4;
-            restgpr.size = (32 - i) * 4 + 12;
-            image.symbols.emplace(Symbol{ fmt::format("__restgprlr_{}", i), restgpr.base, restgpr.size, Symbol_Function });
+            if (config.restGpr14Address != 0)
+            {
+                auto& restgpr = functions.emplace_back();
+                restgpr.base = config.restGpr14Address + (i - 14) * 4;
+                restgpr.size = (32 - i) * 4 + 12;
+                image.symbols.emplace(Symbol{ fmt::format("__restgprlr_{}", i), restgpr.base, restgpr.size, Symbol_Function });
+            }
 
-            auto& savegpr = functions.emplace_back();
-            savegpr.base = config.saveGpr14Address + (i - 14) * 4;
-            savegpr.size = (32 - i) * 4 + 8;
-            image.symbols.emplace(fmt::format("__savegprlr_{}", i), savegpr.base, savegpr.size, Symbol_Function);
+            if (config.saveGpr14Address != 0)
+            {
+                auto& savegpr = functions.emplace_back();
+                savegpr.base = config.saveGpr14Address + (i - 14) * 4;
+                savegpr.size = (32 - i) * 4 + 8;
+                image.symbols.emplace(fmt::format("__savegprlr_{}", i), savegpr.base, savegpr.size, Symbol_Function);
+            }
 
-            auto& restfpr = functions.emplace_back();
-            restfpr.base = config.restFpr14Address + (i - 14) * 4;
-            restfpr.size = (32 - i) * 4 + 4;
-            image.symbols.emplace(fmt::format("__restfpr_{}", i), restfpr.base, restfpr.size, Symbol_Function);
+            if (config.restFpr14Address != 0)
+            {
+                auto& restfpr = functions.emplace_back();
+                restfpr.base = config.restFpr14Address + (i - 14) * 4;
+                restfpr.size = (32 - i) * 4 + 4;
+                image.symbols.emplace(fmt::format("__restfpr_{}", i), restfpr.base, restfpr.size, Symbol_Function);
+            }
 
-            auto& savefpr = functions.emplace_back();
-            savefpr.base = config.saveFpr14Address + (i - 14) * 4;
-            savefpr.size = (32 - i) * 4 + 4;
-            image.symbols.emplace(fmt::format("__savefpr_{}", i), savefpr.base, savefpr.size, Symbol_Function);
+            if (config.saveFpr14Address != 0)
+            {
+                auto& savefpr = functions.emplace_back();
+                savefpr.base = config.saveFpr14Address + (i - 14) * 4;
+                savefpr.size = (32 - i) * 4 + 4;
+                image.symbols.emplace(fmt::format("__savefpr_{}", i), savefpr.base, savefpr.size, Symbol_Function);
+            }
 
-            auto& restvmx = functions.emplace_back();
-            restvmx.base = config.restVmx14Address + (i - 14) * 8;
-            restvmx.size = (32 - i) * 8 + 4;
-            image.symbols.emplace(fmt::format("__restvmx_{}", i), restvmx.base, restvmx.size, Symbol_Function);
+            if (config.restVmx14Address != 0)
+            {
+                auto& restvmx = functions.emplace_back();
+                restvmx.base = config.restVmx14Address + (i - 14) * 8;
+                restvmx.size = (32 - i) * 8 + 4;
+                image.symbols.emplace(fmt::format("__restvmx_{}", i), restvmx.base, restvmx.size, Symbol_Function);
+            }
 
-            auto& savevmx = functions.emplace_back();
-            savevmx.base = config.saveVmx14Address + (i - 14) * 8;
-            savevmx.size = (32 - i) * 8 + 4;
-            image.symbols.emplace(fmt::format("__savevmx_{}", i), savevmx.base, savevmx.size, Symbol_Function);
+            if (config.saveVmx14Address != 0)
+            {
+                auto& savevmx = functions.emplace_back();
+                savevmx.base = config.saveVmx14Address + (i - 14) * 8;
+                savevmx.size = (32 - i) * 8 + 4;
+                image.symbols.emplace(fmt::format("__savevmx_{}", i), savevmx.base, savevmx.size, Symbol_Function);
+            }
         }
 
         if (i >= 64)
         {
-            auto& restvmx = functions.emplace_back();
-            restvmx.base = config.restVmx64Address + (i - 64) * 8;
-            restvmx.size = (128 - i) * 8 + 4;
-            image.symbols.emplace(fmt::format("__restvmx_{}", i), restvmx.base, restvmx.size, Symbol_Function);
+            if (config.restVmx64Address != 0)
+            {
+                auto& restvmx = functions.emplace_back();
+                restvmx.base = config.restVmx64Address + (i - 64) * 8;
+                restvmx.size = (128 - i) * 8 + 4;
+                image.symbols.emplace(fmt::format("__restvmx_{}", i), restvmx.base, restvmx.size, Symbol_Function);
+            }
 
-            auto& savevmx = functions.emplace_back();
-            savevmx.base = config.saveVmx64Address + (i - 64) * 8;
-            savevmx.size = (128 - i) * 8 + 4;
-            image.symbols.emplace(fmt::format("__savevmx_{}", i), savevmx.base, savevmx.size, Symbol_Function);
+            if (config.saveVmx64Address != 0)
+            {
+                auto& savevmx = functions.emplace_back();
+                savevmx.base = config.saveVmx64Address + (i - 64) * 8;
+                savevmx.size = (128 - i) * 8 + 4;
+                image.symbols.emplace(fmt::format("__savevmx_{}", i), savevmx.base, savevmx.size, Symbol_Function);
+            }
         }
     }
 

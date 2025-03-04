@@ -38,6 +38,15 @@ void RecompilerConfig::Load(const std::string_view& configFilePath)
         longJmpAddress = main["longjmp_address"].value_or(0u);
         setJmpAddress = main["setjmp_address"].value_or(0u);
 
+        if (restGpr14Address == 0) fmt::println("ERROR: __restgprlr_14 address is unspecified");
+        if (saveGpr14Address == 0) fmt::println("ERROR: __savegprlr_14 address is unspecified");
+        if (restFpr14Address == 0) fmt::println("ERROR: __restfpr_14 address is unspecified");
+        if (saveFpr14Address == 0) fmt::println("ERROR: __savefpr_14 address is unspecified");
+        if (restVmx14Address == 0) fmt::println("ERROR: __restvmx_14 address is unspecified");
+        if (saveVmx14Address == 0) fmt::println("ERROR: __savevmx_14 address is unspecified");
+        if (restVmx64Address == 0) fmt::println("ERROR: __restvmx_64 address is unspecified");
+        if (saveVmx64Address == 0) fmt::println("ERROR: __savevmx_64 address is unspecified");
+
         if (auto functionsArray = main["functions"].as_array())
         {
             for (auto& func : *functionsArray)
