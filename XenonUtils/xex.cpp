@@ -126,7 +126,8 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
 {
     auto* header = reinterpret_cast<const Xex2Header*>(data);
     auto* security = reinterpret_cast<const Xex2SecurityInfo*>(data + header->securityOffset);
-    const auto* fileFormatInfo = reinterpret_cast<const Xex2OptFileFormatInfo*>(getOptHeaderPtr(data, XEX_HEADER_FILE_FORMAT_INFO));
+    const auto* fileFormatInfo = static_cast<const Xex2OptFileFormatInfo*>(getOptHeaderPtr(data, XEX_HEADER_FILE_FORMAT_INFO));
+    const auto* execInfo = static_cast<const Xex2OptExecutionInfo*>(getOptHeaderPtr(data, XEX_HEADER_EXECUTION_INFO));
 
     Image image{};
     std::unique_ptr<uint8_t[]> result{};
@@ -147,7 +148,11 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
 
             uint8_t decryptedKey[KeySize];
             memcpy(decryptedKey, security->aesKey, KeySize);
-            AES_init_ctx_iv(&aesContext, Xex2RetailKey, AESBlankIV);
+            if (!execInfo || !execInfo->titleId) {
+                AES_init_ctx_iv(&aesContext, Xex2DevkitKey, AESBlankIV);
+            } else {
+                AES_init_ctx_iv(&aesContext, Xex2RetailKey, AESBlankIV);
+            }
             AES_CBC_decrypt_buffer(&aesContext, decryptedKey, KeySize);
 
             decryptedData = std::make_unique<uint8_t[]>(dataSize - header->headerSize);

@@ -160,7 +160,7 @@ Property|Description
 restgprlr_14_address|Start address of the `__restgprlr_14` function. It starts with `ld r14, -0x98(r1)`, repeating the same operation for the rest of the non-volatile registers and restoring the link register at the end.
 savegprlr_14_address|Start address of the `__savegprlr_14` function. It starts with `std r14, -0x98(r1)`, repeating the same operation for the rest of the non-volatile registers and saving the link register at the end.
 restfpr_14_address|Start address of the `__restfpr_14` function. It starts with `lfd f14, -0x90(r12)`, repeating the same operation for the rest of the non-volatile FPU registers.
-savefpr_14_address|Start address of the `__savefpr_14` function. It starts with `stfd r14, -0x90(r12)`, repeating the same operation for the rest of the non-volatile FPU registers.
+savefpr_14_address|Start address of the `__savefpr_14` function. It starts with `stfd f14, -0x90(r12)`, repeating the same operation for the rest of the non-volatile FPU registers.
 restvmx_14_address|Start address of the `__restvmx_14` function. It starts with `li r11, -0x120` and `lvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.
 savevmx_14_address|Start address of the `__savevmx_14` function. It starts with `li r11, -0x120` and `stvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.
 restvmx_64_address|Start address of the `__restvmx_64` function. It starts with `li r11, -0x400` and `lvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.

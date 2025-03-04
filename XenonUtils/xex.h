@@ -3,6 +3,7 @@
 #include "xbox.h"
 
 inline constexpr uint8_t Xex2RetailKey[16] = { 0x20, 0xB1, 0x85, 0xA5, 0x9D, 0x28, 0xFD, 0xC3, 0x40, 0x58, 0x3F, 0xBB, 0x08, 0x96, 0xBF, 0x91 };
+inline constexpr uint8_t Xex2DevkitKey[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 inline constexpr uint8_t AESBlankIV[16] = {};
 
 enum Xex2ModuleFlags
@@ -186,6 +187,19 @@ struct Xex2OptFileFormatInfo
     be<uint16_t> compressionType;
 };
 
+struct Xex2OptExecutionInfo
+{
+    be<uint32_t> mediaId;
+    be<uint32_t> version;
+    be<uint32_t> versionBase;
+    be<uint32_t> titleId;
+    uint8_t platform;
+    uint8_t executableTable;
+    uint8_t discNumber;
+    uint8_t discTotal;
+    be<uint32_t> savedGameId;
+};
+
 struct Xex2ImportHeader
 {
     be<uint32_t> sizeOfHeader;
@@ -204,10 +218,20 @@ struct Xex2ImportLibrary
     be<uint16_t> numberOfImports;
 };
 
+// https://github.com/emoose/idaxex/blob/198b1d52414d35926644bbeec607b3feac5f44e7/formats/pe_structs.hpp#L140-L150
 struct Xex2ImportDescriptor 
 {
-    be<uint32_t> firstThunk; // VA XEX_THUNK_DATA
+    union
+    {
+        be<uint32_t> characteristics;
+        be<uint32_t> originalFirstThunk;
+    };
+    be<uint32_t> timeDateStamp;
+    be<uint32_t> forwarderChainId;
+    be<uint32_t> moduleName;
+    be<uint32_t> firstThunk;
 };
+static_assert(sizeof(Xex2ImportDescriptor) == 0x14, "Xex2ImportDescriptor");
 
 struct Xex2ThunkData 
 {
