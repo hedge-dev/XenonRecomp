@@ -86,3 +86,37 @@ jobs:
       with:
         name: XenonBinaries-${{ matrix.os }}
         path: artifacts/*
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Linux Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: XenonBinaries-Linux
+        path: artifacts
+
+    - name: Download Windows Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: XenonBinaries-Windows
+        path: artifacts
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          **Automated release for** ${{ github.ref_name }}
+
+          - Includes builds for **Linux** and **Windows**.
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/XenonBinaries-Linux.tar.gz
+          artifacts/XenonBinaries-Windows.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
