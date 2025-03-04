@@ -116,7 +116,7 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          artifacts/XenonBinaries-Linux.tar.gz
-          artifacts/XenonBinaries-Windows.zip
+          artifacts/XenonBinaries-ubuntu-latest.zip
+          artifacts/XenonBinaries-windows-latest.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
