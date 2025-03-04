@@ -164,7 +164,7 @@ savefpr_14_address|Start address of the `__savefpr_14` function. It starts with 
 restvmx_14_address|Start address of the `__restvmx_14` function. It starts with `li r11, -0x120` and `lvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.|`39 60 fe e0 7d cb 60 ce`
 savevmx_14_address|Start address of the `__savevmx_14` function. It starts with `li r11, -0x120` and `stvx v14, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers until `v31`.|`39 60 fe e0 7d cb 61 ce`
 restvmx_64_address|Start address of the `__restvmx_64` function. It starts with `li r11, -0x400` and `lvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.|`39 60 fc 00 10 0b 60 cb`
-savevmx_64_address|Start address of the `__savevmx_64` function. It starts with `li r11, -0x400` and `stvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.|`39 60 fc 00 10 0b 51 cb`
+savevmx_64_address|Start address of the `__savevmx_64` function. It starts with `li r11, -0x400` and `stvx128 v64, r11, r12`, repeating the same operation for the rest of the non-volatile VMX registers.|`39 60 fc 00 10 0b 61 cb`
 
 #### longjmp & setjmp
 
