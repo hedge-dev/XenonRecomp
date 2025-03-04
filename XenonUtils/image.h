@@ -2,7 +2,6 @@
 #include <memory>
 #include <string>
 #include <set>
-#include <expected>
 #include <section.h>
 #include "symbol_table.h"
 
