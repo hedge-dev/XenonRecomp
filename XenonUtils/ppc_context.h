@@ -215,34 +215,71 @@ struct PPCFPSCRRegister
 {
     uint32_t csr;
 
-    static constexpr size_t GuestToHost[] = { SIMDE_MM_ROUND_NEAREST, SIMDE_MM_ROUND_TOWARD_ZERO, SIMDE_MM_ROUND_UP, SIMDE_MM_ROUND_DOWN };
     static constexpr size_t HostToGuest[] = { PPC_ROUND_NEAREST, PPC_ROUND_DOWN, PPC_ROUND_UP, PPC_ROUND_TOWARD_ZERO };
+
+    // simde does not handle denormal flags, so we need to implement per-arch.
+#if defined(__x86_64__) || defined(_M_X64)
+    static constexpr size_t RoundShift = 13;
+    static constexpr size_t RoundMask = SIMDE_MM_ROUND_MASK;
+    static constexpr size_t FlushMask = SIMDE_MM_FLUSH_ZERO_MASK | _MM_DENORMALS_ZERO_MASK;
+    static constexpr size_t GuestToHost[] = { SIMDE_MM_ROUND_NEAREST, SIMDE_MM_ROUND_TOWARD_ZERO, SIMDE_MM_ROUND_UP, SIMDE_MM_ROUND_DOWN };
+
+    inline uint32_t getcsr() noexcept
+    {
+        return simde_mm_getcsr();
+    }
+
+    inline void setcsr(uint32_t csr) noexcept
+    {
+        simde_mm_setcsr(csr);
+    }
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    // RMode
+    static constexpr size_t RoundShift = 22;
+    static constexpr size_t RoundMask = 3 << RoundShift;
+    // FZ and FZ16
+    static constexpr size_t FlushMask = (1 << 19) | (1 << 24);
+    // Nearest, Zero, -Infinity, -Infinity
+    static constexpr size_t GuestToHost[] = { 0 << RoundShift, 3 << RoundShift, 1 << RoundShift, 2 << RoundShift };
+
+    inline uint32_t getcsr() noexcept
+    {
+        uint64_t csr;
+        __asm__ __volatile__("mrs %0, fpcr" : "=r"(csr));
+        return csr;
+    }
+
+    inline void setcsr(uint32_t csr) noexcept
+    {
+        __asm__ __volatile__("msr fpcr, %0" : : "r"(csr));
+    }
+#else
+#   error "Missing implementation for FPSCR."
+#endif
 
     inline uint32_t loadFromHost() noexcept
     {
-        csr = simde_mm_getcsr();
-        return HostToGuest[(csr & SIMDE_MM_ROUND_MASK) >> 13];
+        csr = getcsr();
+        return HostToGuest[(csr & RoundMask) >> RoundShift];
     }
         
     inline void storeFromGuest(uint32_t value) noexcept
     {
-        csr &= ~SIMDE_MM_ROUND_MASK;
+        csr &= ~RoundMask;
         csr |= GuestToHost[value & PPC_ROUND_MASK];
-        simde_mm_setcsr(csr);
+        setcsr(csr);
     }
-
-    static constexpr size_t FlushMask = SIMDE_MM_FLUSH_ZERO_MASK | _MM_DENORMALS_ZERO_MASK;
 
     inline void enableFlushModeUnconditional() noexcept
     {
         csr |= FlushMask;
-        simde_mm_setcsr(csr);
+        setcsr(csr);
     }
 
     inline void disableFlushModeUnconditional() noexcept
     {
         csr &= ~FlushMask;
-        simde_mm_setcsr(csr);
+        setcsr(csr);
     }
 
     inline void enableFlushMode() noexcept
@@ -250,7 +287,7 @@ struct PPCFPSCRRegister
         if ((csr & FlushMask) != FlushMask) [[unlikely]]
         {
             csr |= FlushMask;
-            simde_mm_setcsr(csr);
+            setcsr(csr);
         }
     }
 
@@ -259,7 +296,7 @@ struct PPCFPSCRRegister
         if ((csr & FlushMask) != 0) [[unlikely]]
         {
             csr &= ~FlushMask;
-            simde_mm_setcsr(csr);
+            setcsr(csr);
         }
     }
 };
@@ -650,5 +687,17 @@ inline simde__m128i simde_mm_vsr(simde__m128i a, simde__m128i b)
     b = simde_mm_srli_epi64(simde_mm_slli_epi64(b, 61), 61);
     return simde_mm_castps_si128(simde_mm_insert_ps(simde_mm_castsi128_ps(simde_mm_srl_epi64(a, b)), simde_mm_castsi128_ps(simde_mm_srl_epi64(simde_mm_srli_si128(a, 4), b)), 0x10));
 }
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+inline uint64_t __rdtsc()
+{
+    uint64_t ret;
+    asm volatile("mrs %0, cntvct_el0\n\t"
+                 : "=r"(ret)::"memory");
+    return ret;
+}
+#elif !defined(__x86_64__) && !defined(_M_X64)
+#   error "Missing implementation for __rdtsc()"
+#endif
 
 #endif
