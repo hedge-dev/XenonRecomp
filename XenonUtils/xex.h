@@ -245,13 +245,17 @@ inline const void* getOptHeaderPtr(const uint8_t* moduleBytes, uint32_t headerKe
         const Xex2OptHeader& optHeader = ((const Xex2OptHeader*)(xex2Header + 1))[i];
         if (optHeader.key == headerKey)
         {
-            if ((headerKey & 0xFF) == 0)
+            if((headerKey & 0xFF) == 0)
             {
-                return &optHeader.value;
+                return reinterpret_cast<const uint32_t *>(&optHeader.value);
+            }
+            else if ((headerKey & 0xFF) == 1)
+            {
+                return reinterpret_cast<const void *>(&optHeader.value);
             }
             else
             {
-                return &moduleBytes[optHeader.offset];
+                return reinterpret_cast<const void *>(reinterpret_cast<uintptr_t>(moduleBytes) + optHeader.offset);
             }
         }
     }
