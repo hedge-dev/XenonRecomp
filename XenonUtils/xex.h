@@ -193,7 +193,7 @@ struct Xex2ImportHeader
     be<uint32_t> numImports;
 };
 
-struct Xex2ImportLibrary 
+struct Xex2ImportLibrary
 {
     be<uint32_t> size;
     char nextImportDigest[0x14];
@@ -204,12 +204,12 @@ struct Xex2ImportLibrary
     be<uint16_t> numberOfImports;
 };
 
-struct Xex2ImportDescriptor 
+struct Xex2ImportDescriptor
 {
     be<uint32_t> firstThunk; // VA XEX_THUNK_DATA
 };
 
-struct Xex2ThunkData 
+struct Xex2ThunkData
 {
     union
     {
