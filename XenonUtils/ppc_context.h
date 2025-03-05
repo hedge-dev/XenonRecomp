@@ -26,8 +26,13 @@
 #define PPC_STRINGIFY(x) PPC_XSTRINGIFY(x)
 #define PPC_FUNC(x) void x(PPCContext& __restrict ctx, uint8_t* base)
 #define PPC_FUNC_IMPL(x) extern "C" PPC_FUNC(x)
-#define PPC_EXTERN_FUNC(x) extern PPC_FUNC(x)
 #define PPC_WEAK_FUNC(x) __attribute__((weak,noinline)) PPC_FUNC(x)
+#ifdef __APPLE__
+// Declare header declaration as weak as well to make sure LTO is correct.
+#define PPC_EXTERN_FUNC(x) extern PPC_WEAK_FUNC(x)
+#else
+#define PPC_EXTERN_FUNC(x) extern PPC_FUNC(x)
+#endif
 
 #define PPC_FUNC_PROLOGUE() __builtin_assume(((size_t)base & 0xFFFFFFFF) == 0)
 
