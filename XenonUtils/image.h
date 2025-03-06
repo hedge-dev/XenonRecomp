@@ -1,19 +1,19 @@
 #pragma once
-#include <memory>
-#include <string>
-#include <set>
-#include <section.h>
 #include "symbol_table.h"
+#include <memory>
+#include <section.h>
+#include <set>
+#include <string>
 
 struct Image
 {
-    std::unique_ptr<uint8_t[]> data{};
-    size_t base{};
-    uint32_t size{};
+    std::unique_ptr<uint8_t[]> data {};
+    size_t base {};
+    uint32_t size {};
 
-    size_t entry_point{};
-    std::set<Section, SectionComparer> sections{};
-    SymbolTable symbols{};
+    size_t entry_point {};
+    std::set<Section, SectionComparer> sections {};
+    SymbolTable symbols {};
 
     /**
      * \brief Map data to image by RVA

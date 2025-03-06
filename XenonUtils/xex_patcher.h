@@ -18,7 +18,8 @@
 
 struct XexPatcher
 {
-    enum class Result {
+    enum class Result
+    {
         Success,
         FileOpenFailed,
         FileWriteFailed,
@@ -30,6 +31,6 @@ struct XexPatcher
         PatchUnsupported
     };
 
-    static Result apply(const uint8_t* xexBytes, size_t xexBytesSize, const uint8_t* patchBytes, size_t patchBytesSize, std::vector<uint8_t> &outBytes, bool skipData);
-    static Result apply(const std::filesystem::path &baseXexPath, const std::filesystem::path &patchXexPath, const std::filesystem::path &newXexPath);
+    static Result apply(const uint8_t* xexBytes, size_t xexBytesSize, const uint8_t* patchBytes, size_t patchBytesSize, std::vector<uint8_t>& outBytes, bool skipData);
+    static Result apply(const std::filesystem::path& baseXexPath, const std::filesystem::path& patchXexPath, const std::filesystem::path& newXexPath);
 };

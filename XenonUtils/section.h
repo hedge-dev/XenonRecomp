@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <cstdint>
+#include <string>
 
 enum SectionFlags : uint8_t
 {
@@ -11,11 +11,11 @@ enum SectionFlags : uint8_t
 
 struct Section
 {
-    std::string name{};
-    size_t base{};
-    uint32_t size{};
-    SectionFlags flags{};
-    uint8_t* data{};
+    std::string name {};
+    size_t base {};
+    uint32_t size {};
+    SectionFlags flags {};
+    uint8_t* data {};
 
     bool operator<(size_t address) const
     {

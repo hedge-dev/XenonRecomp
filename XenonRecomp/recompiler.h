@@ -5,17 +5,17 @@
 
 struct RecompilerLocalVariables
 {
-    bool ctr{};
-    bool xer{};
-    bool reserved{};
-    bool cr[8]{};
-    bool r[32]{};
-    bool f[32]{};
-    bool v[128]{};
-    bool env{};
-    bool temp{};
-    bool vTemp{};
-    bool ea{};
+    bool ctr {};
+    bool xer {};
+    bool reserved {};
+    bool cr[8] {};
+    bool r[32] {};
+    bool f[32] {};
+    bool v[128] {};
+    bool env {};
+    bool temp {};
+    bool vTemp {};
+    bool ea {};
 };
 
 enum class CSRState
