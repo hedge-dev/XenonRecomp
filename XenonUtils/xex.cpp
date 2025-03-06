@@ -201,8 +201,17 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
     const auto* dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(image.data.get());
     const auto* ntHeaders = reinterpret_cast<IMAGE_NT_HEADERS32*>(image.data.get() + dosHeader->e_lfanew);
 
-    image.base = ntHeaders->OptionalHeader.ImageBase;
-    image.entry_point = image.base + ntHeaders->OptionalHeader.AddressOfEntryPoint;
+    image.base = security->loadAddress;
+    const void* xex2BaseAddressPtr = getOptHeaderPtr(data, XEX_HEADER_IMAGE_BASE_ADDRESS);
+    if (xex2BaseAddressPtr != nullptr)
+    {
+        image.base = *reinterpret_cast<const be<uint32_t>*>(xex2BaseAddressPtr);
+    }
+    const void* xex2EntryPointPtr = getOptHeaderPtr(data, XEX_HEADER_ENTRY_POINT);
+    if (xex2EntryPointPtr != nullptr)
+    {
+        image.entry_point = *reinterpret_cast<const be<uint32_t>*>(xex2EntryPointPtr);
+    }
 
     const auto numSections = ntHeaders->FileHeader.NumberOfSections;
     const auto* sections = reinterpret_cast<const IMAGE_SECTION_HEADER*>(ntHeaders + 1);
@@ -227,10 +236,13 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
         std::vector<std::string_view> stringTable;
         auto* pStrTable = reinterpret_cast<const char*>(imports + 1);
 
+        size_t paddedStringOffset = 0;
         for (size_t i = 0; i < imports->numImports; i++)
         {
-            stringTable.emplace_back(pStrTable);
-            pStrTable += strlen(pStrTable) + 1;
+            stringTable.emplace_back(pStrTable + paddedStringOffset);
+            
+            // pad the offset to the next multiple of 4
+            paddedStringOffset += ((stringTable.back().length() + 1) + 3) & ~3;
         }
 
         auto* library = (Xex2ImportLibrary*)(((char*)imports) + sizeof(Xex2ImportHeader) + imports->sizeOfStringTable);
