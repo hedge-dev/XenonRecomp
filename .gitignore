@@ -397,3 +397,13 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# IntelliJ IDEs
+.idea/
+
+# macOS metadata
+*.DS_Store
+
+# CMake Files
+**/cmake-build-debug
+**/CMakeCache.txt
