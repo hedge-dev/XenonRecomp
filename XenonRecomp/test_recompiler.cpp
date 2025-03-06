@@ -23,13 +23,14 @@ void TestRecompiler::Analyse(const std::string_view& testName)
 
             auto& fn = functions.emplace_back(Function::Analyze(data, dataEnd - data, base));
             image.symbols.emplace(fmt::format("{}_{:X}", testName, fn.base), fn.base, fn.size, Symbol_Function);
-            
+
             base += fn.size;
             data += fn.size;
         }
     }
 
-    std::sort(functions.begin(), functions.end(), [](auto& lhs, auto& rhs) { return lhs.base < rhs.base; });
+    std::sort(functions.begin(), functions.end(), [](auto& lhs, auto& rhs)
+        { return lhs.base < rhs.base; });
 }
 
 void TestRecompiler::RecompileTests(const char* srcDirectoryPath, const char* dstDirectoryPath)
@@ -118,15 +119,15 @@ void TestRecompiler::RecompileTests(const char* srcDirectoryPath, const char* ds
         {
             std::string str;
             auto getline = [&]()
+            {
+                if (std::getline(in, str))
                 {
-                    if (std::getline(in, str))
-                    {
-                        str.erase(str.find_last_not_of(' ') + 1);
-                        str.erase(0, str.find_first_not_of(' '));
-                        return true;
-                    }
-                    return false;
-                };
+                    str.erase(str.find_last_not_of(' ') + 1);
+                    str.erase(0, str.find_first_not_of(' '));
+                    return true;
+                }
+                return false;
+            };
 
             while (getline())
             {

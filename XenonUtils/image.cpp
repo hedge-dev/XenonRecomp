@@ -48,7 +48,7 @@ Image ElfLoadImage(const uint8_t* data, size_t size)
     const auto* header = (elf32_hdr*)data;
     assert(header->e_ident[EI_DATA] == 2);
 
-    Image image{};
+    Image image {};
     image.size = size;
     image.data = std::make_unique<uint8_t[]>(size);
     image.entry_point = ByteSwap(header->e_entry);
@@ -81,7 +81,7 @@ Image ElfLoadImage(const uint8_t* data, size_t size)
             continue;
         }
 
-        uint8_t flags{};
+        uint8_t flags {};
 
         if (section.sh_flags & ByteSwap(SHF_EXECINSTR))
         {

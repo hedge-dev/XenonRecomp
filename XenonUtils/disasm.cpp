@@ -1,6 +1,6 @@
 #include "disasm.h"
 
-thread_local ppc::DisassemblerEngine ppc::gBigEndianDisassembler{ BFD_ENDIAN_BIG, "cell 64"};
+thread_local ppc::DisassemblerEngine ppc::gBigEndianDisassembler { BFD_ENDIAN_BIG, "cell 64" };
 
 ppc::DisassemblerEngine::DisassemblerEngine(bfd_endian endian, const char* options)
 {

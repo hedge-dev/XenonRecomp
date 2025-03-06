@@ -36,7 +36,7 @@ XDBFBlock XDBFWrapper::GetResource(EXDBFNamespace ns, uint64_t id) const
 
         if (entry.NamespaceID == ns && entry.ResourceID == id)
         {
-            XDBFBlock block{};
+            XDBFBlock block {};
             block.pBuffer = pContent + entry.Offset;
             block.BufferSize = entry.Length;
             return block;
@@ -89,7 +89,7 @@ std::vector<Achievement> XDBFWrapper::GetAchievements(EXDBFLanguage language) co
 
         seek += sizeof(XACHEntry);
 
-        Achievement achievement{};
+        Achievement achievement {};
         achievement.ID = entry->AchievementID;
         achievement.Name = GetString(language, entry->NameID);
         achievement.UnlockedDesc = GetString(language, entry->UnlockedDescID);
@@ -112,7 +112,7 @@ std::vector<Achievement> XDBFWrapper::GetAchievements(EXDBFLanguage language) co
 
 Achievement XDBFWrapper::GetAchievement(EXDBFLanguage language, uint16_t id) const
 {
-    Achievement result{};
+    Achievement result {};
 
     auto achievementsBlock = GetResource(XDBF_SPA_NAMESPACE_METADATA, 0x58414348);
 

@@ -1,12 +1,12 @@
 #pragma once
-#include <cstdint>
-#include <type_traits>
-#include <bit>
-#include <string>
 #include "byteswap.h"
+#include <bit>
+#include <cstdint>
+#include <string>
+#include <type_traits>
 
 #ifdef _WIN32
-    #include <windows.h>
+#include <windows.h>
 #endif
 
 // real win32 handles will never use the upper bits unless something goes really wrong
@@ -15,7 +15,7 @@
 #define HOST_HANDLE(HANDLE) ((HANDLE) & ~0x80000000)
 
 // Return true to free the associated memory
-typedef bool(*TypeDestructor_t)(void*);
+typedef bool (*TypeDestructor_t)(void*);
 
 template<typename T>
 bool DestroyObject(void* obj)
@@ -71,13 +71,13 @@ struct be
         return byteswap(value);
     }
 
-    be& operator| (T value)
+    be& operator|(T value)
     {
         set(get() | value);
         return *this;
     }
 
-    be& operator& (T value)
+    be& operator&(T value)
     {
         set(get() & value);
         return *this;
@@ -119,7 +119,7 @@ struct xpointer
         return reinterpret_cast<T*>(MmGetHostAddress(ptr));
     }
 
-    operator T* () const
+    operator T*() const
     {
         return get();
     }
@@ -144,7 +144,7 @@ typedef struct _IMAGE_CE_RUNTIME_FUNCTION
 {
     uint32_t BeginAddress;
 
-    union 
+    union
     {
         uint32_t Data;
         struct
@@ -196,7 +196,7 @@ typedef struct _XDISPATCHER_HEADER
 
     be<uint32_t> SignalState;
     XLIST_ENTRY WaitListHead;
-} XDISPATCHER_HEADER, * XPDISPATCHER_HEADER;
+} XDISPATCHER_HEADER, *XPDISPATCHER_HEADER;
 
 // These variables are never accessed in guest code, we can safely use them in little endian
 typedef struct _XRTL_CRITICAL_SECTION
@@ -207,7 +207,8 @@ typedef struct _XRTL_CRITICAL_SECTION
     uint32_t OwningThread;
 } XRTL_CRITICAL_SECTION;
 
-typedef struct _XANSI_STRING {
+typedef struct _XANSI_STRING
+{
     be<uint16_t> Length;
     be<uint16_t> MaximumLength;
     xpointer<char> Buffer;
@@ -224,14 +225,16 @@ typedef XDISPATCHER_HEADER XKEVENT;
 
 typedef struct _XIO_STATUS_BLOCK
 {
-    union {
+    union
+    {
         be<uint32_t> Status;
         be<uint32_t> Pointer;
     };
     be<uint32_t> Information;
 } XIO_STATUS_BLOCK;
 
-typedef struct _XOVERLAPPED {
+typedef struct _XOVERLAPPED
+{
     be<uint32_t> Internal;
     be<uint32_t> InternalHigh;
     be<uint32_t> Offset;
@@ -240,7 +243,8 @@ typedef struct _XOVERLAPPED {
 } XOVERLAPPED;
 
 // this name is so dumb
-typedef struct _XXOVERLAPPED {
+typedef struct _XXOVERLAPPED
+{
     union
     {
         struct
@@ -265,7 +269,8 @@ typedef struct _XXOVERLAPPED {
 static_assert(sizeof(_XXOVERLAPPED) == 0x1C);
 
 // https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-memorystatus
-typedef struct _XMEMORYSTATUS {
+typedef struct _XMEMORYSTATUS
+{
     be<uint32_t> dwLength;
     be<uint32_t> dwMemoryLoad;
     be<uint32_t> dwTotalPhys;
@@ -274,7 +279,7 @@ typedef struct _XMEMORYSTATUS {
     be<uint32_t> dwAvailPageFile;
     be<uint32_t> dwTotalVirtual;
     be<uint32_t> dwAvailVirtual;
-} XMEMORYSTATUS, * XLPMEMORYSTATUS;
+} XMEMORYSTATUS, *XLPMEMORYSTATUS;
 
 typedef struct _XVIDEO_MODE
 {
@@ -296,7 +301,8 @@ typedef struct _XKSEMAPHORE
     be<uint32_t> Limit;
 } XKSEMAPHORE;
 
-typedef struct _XUSER_SIGNIN_INFO {
+typedef struct _XUSER_SIGNIN_INFO
+{
     be<uint64_t> xuid;
     be<uint32_t> dwField08;
     be<uint32_t> SigninState;
@@ -315,19 +321,19 @@ typedef struct _XTIME_FIELDS
     be<uint16_t> Second;
     be<uint16_t> Milliseconds;
     be<uint16_t> Weekday;
-} XTIME_FIELDS, * PXTIME_FIELDS;
+} XTIME_FIELDS, *PXTIME_FIELDS;
 
 // Content types
 #define XCONTENTTYPE_SAVEDATA 1
-#define XCONTENTTYPE_DLC      2
+#define XCONTENTTYPE_DLC 2
 #define XCONTENTTYPE_RESERVED 3
 
-#define XCONTENT_NEW      1
+#define XCONTENT_NEW 1
 #define XCONTENT_EXISTING 2
 
 #define XCONTENT_MAX_DISPLAYNAME 128
-#define XCONTENT_MAX_FILENAME    42
-#define XCONTENTDEVICE_MAX_NAME  27
+#define XCONTENT_MAX_FILENAME 42
+#define XCONTENTDEVICE_MAX_NAME 27
 
 typedef struct _XCONTENT_DATA
 {
@@ -335,14 +341,13 @@ typedef struct _XCONTENT_DATA
     be<uint32_t> dwContentType;
     be<uint16_t> szDisplayName[XCONTENT_MAX_DISPLAYNAME];
     char szFileName[XCONTENT_MAX_FILENAME];
-} XCONTENT_DATA, * PXCONTENT_DATA;
+} XCONTENT_DATA, *PXCONTENT_DATA;
 
 typedef struct _XHOSTCONTENT_DATA : _XCONTENT_DATA
 {
     // This is a host exclusive type so we don't care what goes on
-    std::string szRoot{};
+    std::string szRoot {};
 } XHOSTCONTENT_DATA, *PXHOSTCONTENT_DATA;
-
 
 #define XCONTENTDEVICETYPE_HDD 1
 #define XCONTENTDEVICETYPE_MU 2
@@ -358,52 +363,52 @@ typedef struct _XDEVICE_DATA
 
 // Direct reflection of XInput structures
 
-#define XAMINPUT_DEVTYPE_GAMEPAD          0x01
-#define XAMINPUT_DEVSUBTYPE_GAMEPAD       0x01
+#define XAMINPUT_DEVTYPE_GAMEPAD 0x01
+#define XAMINPUT_DEVSUBTYPE_GAMEPAD 0x01
 
-#define XAMINPUT_GAMEPAD_DPAD_UP          0x0001
-#define XAMINPUT_GAMEPAD_DPAD_DOWN        0x0002
-#define XAMINPUT_GAMEPAD_DPAD_LEFT        0x0004
-#define XAMINPUT_GAMEPAD_DPAD_RIGHT       0x0008
-#define XAMINPUT_GAMEPAD_START            0x0010
-#define XAMINPUT_GAMEPAD_BACK             0x0020
-#define XAMINPUT_GAMEPAD_LEFT_THUMB       0x0040
-#define XAMINPUT_GAMEPAD_RIGHT_THUMB      0x0080
-#define XAMINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
-#define XAMINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
-#define XAMINPUT_GAMEPAD_A                0x1000
-#define XAMINPUT_GAMEPAD_B                0x2000
-#define XAMINPUT_GAMEPAD_X                0x4000
-#define XAMINPUT_GAMEPAD_Y                0x8000
+#define XAMINPUT_GAMEPAD_DPAD_UP 0x0001
+#define XAMINPUT_GAMEPAD_DPAD_DOWN 0x0002
+#define XAMINPUT_GAMEPAD_DPAD_LEFT 0x0004
+#define XAMINPUT_GAMEPAD_DPAD_RIGHT 0x0008
+#define XAMINPUT_GAMEPAD_START 0x0010
+#define XAMINPUT_GAMEPAD_BACK 0x0020
+#define XAMINPUT_GAMEPAD_LEFT_THUMB 0x0040
+#define XAMINPUT_GAMEPAD_RIGHT_THUMB 0x0080
+#define XAMINPUT_GAMEPAD_LEFT_SHOULDER 0x0100
+#define XAMINPUT_GAMEPAD_RIGHT_SHOULDER 0x0200
+#define XAMINPUT_GAMEPAD_A 0x1000
+#define XAMINPUT_GAMEPAD_B 0x2000
+#define XAMINPUT_GAMEPAD_X 0x4000
+#define XAMINPUT_GAMEPAD_Y 0x8000
 
 typedef struct _XAMINPUT_GAMEPAD
 {
-    uint16_t                            wButtons;
-    uint8_t                             bLeftTrigger;
-    uint8_t                             bRightTrigger;
-    int16_t                             sThumbLX;
-    int16_t                             sThumbLY;
-    int16_t                             sThumbRX;
-    int16_t                             sThumbRY;
+    uint16_t wButtons;
+    uint8_t bLeftTrigger;
+    uint8_t bRightTrigger;
+    int16_t sThumbLX;
+    int16_t sThumbLY;
+    int16_t sThumbRX;
+    int16_t sThumbRY;
 } XAMINPUT_GAMEPAD, *PXAMINPUT_GAMEPAD;
 
 typedef struct _XAMINPUT_VIBRATION
 {
-    uint16_t                            wLeftMotorSpeed;
-    uint16_t                            wRightMotorSpeed;
-} XAMINPUT_VIBRATION, * PXAMINPUT_VIBRATION;
+    uint16_t wLeftMotorSpeed;
+    uint16_t wRightMotorSpeed;
+} XAMINPUT_VIBRATION, *PXAMINPUT_VIBRATION;
 
 typedef struct _XAMINPUT_CAPABILITIES
 {
-    uint8_t                             Type;
-    uint8_t                             SubType;
-    uint16_t                            Flags;
-    XAMINPUT_GAMEPAD                    Gamepad;
-    XAMINPUT_VIBRATION                  Vibration;
-} XAMINPUT_CAPABILITIES, * PXAMINPUT_CAPABILITIES;
+    uint8_t Type;
+    uint8_t SubType;
+    uint16_t Flags;
+    XAMINPUT_GAMEPAD Gamepad;
+    XAMINPUT_VIBRATION Vibration;
+} XAMINPUT_CAPABILITIES, *PXAMINPUT_CAPABILITIES;
 
 typedef struct _XAMINPUT_STATE
 {
-    uint32_t                            dwPacketNumber;
-    XAMINPUT_GAMEPAD                    Gamepad;
-} XAMINPUT_STATE, * PXAMINPUT_STATE;
+    uint32_t dwPacketNumber;
+    XAMINPUT_GAMEPAD Gamepad;
+} XAMINPUT_STATE, *PXAMINPUT_STATE;

@@ -2,11 +2,12 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstddef>
 #include <charconv>
+#include <cstddef>
 #include <disasm.h>
 #include <file.h>
 #include <filesystem>
+#include <fmt/core.h>
 #include <fstream>
 #include <function.h>
 #include <image.h>
@@ -14,6 +15,5 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <xbox.h>
-#include <xxhash.h>
-#include <fmt/core.h>
 #include <xmmintrin.h>
+#include <xxhash.h>

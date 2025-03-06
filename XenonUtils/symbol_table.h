@@ -4,7 +4,7 @@
 
 class SymbolTable : public std::multiset<Symbol, SymbolComparer>
 {
-public:
+  public:
     const_iterator find(size_t address) const
     {
         auto [beginIt, endIt] = equal_range(address);
@@ -13,7 +13,7 @@ public:
             return end();
         }
 
-        size_t closest{ address - beginIt->address };
+        size_t closest { address - beginIt->address };
         auto match = end();
         for (auto it = beginIt; it != endIt; ++it)
         {
@@ -41,7 +41,7 @@ public:
             return end();
         }
 
-        size_t closest{ address - beginIt->address };
+        size_t closest { address - beginIt->address };
         auto match = end();
         for (auto it = beginIt; it != endIt; ++it)
         {

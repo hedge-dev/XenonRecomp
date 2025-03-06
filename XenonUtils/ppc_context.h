@@ -17,8 +17,8 @@
 #ifdef _WIN32
 #include <intrin.h>
 #else
-#include <xmmintrin.h>
 #include <smmintrin.h>
+#include <xmmintrin.h>
 #endif
 
 #define PPC_JOIN(x, y) x##y
@@ -27,7 +27,7 @@
 #define PPC_FUNC(x) void x(PPCContext& __restrict ctx, uint8_t* base)
 #define PPC_FUNC_IMPL(x) extern "C" PPC_FUNC(x)
 #define PPC_EXTERN_FUNC(x) extern PPC_FUNC(x)
-#define PPC_WEAK_FUNC(x) __attribute__((weak,noinline)) PPC_FUNC(x)
+#define PPC_WEAK_FUNC(x) __attribute__((weak, noinline)) PPC_FUNC(x)
 
 #define PPC_FUNC_PROLOGUE() __builtin_assume(((size_t)base & 0x1F) == 0)
 
@@ -49,10 +49,10 @@
 
 // TODO: Implement.
 // These are currently unused. However, MMIO loads could possibly be handled statically with some profiling and a fallback.
-// The fallback would be a runtime exception handler which will intercept reads from MMIO regions 
+// The fallback would be a runtime exception handler which will intercept reads from MMIO regions
 // and log the PC for compiling to static code later.
 #ifndef PPC_MM_LOAD_U8
-#define PPC_MM_LOAD_U8(x)  PPC_LOAD_U8 (x)
+#define PPC_MM_LOAD_U8(x) PPC_LOAD_U8(x)
 #endif
 
 #ifndef PPC_MM_LOAD_U16
@@ -86,19 +86,19 @@
 // MMIO Store handling is completely reliant on being preeceded by eieio.
 // TODO: Verify if that's always the case.
 #ifndef PPC_MM_STORE_U8
-#define PPC_MM_STORE_U8(x, y)   PPC_STORE_U8 (x, y)
+#define PPC_MM_STORE_U8(x, y) PPC_STORE_U8(x, y)
 #endif
 
 #ifndef PPC_MM_STORE_U16
-#define PPC_MM_STORE_U16(x, y)  PPC_STORE_U16(x, y)
+#define PPC_MM_STORE_U16(x, y) PPC_STORE_U16(x, y)
 #endif
 
 #ifndef PPC_MM_STORE_U32
-#define PPC_MM_STORE_U32(x, y)  PPC_STORE_U32(x, y)
+#define PPC_MM_STORE_U32(x, y) PPC_STORE_U32(x, y)
 #endif
 
 #ifndef PPC_MM_STORE_U64
-#define PPC_MM_STORE_U64(x, y)  PPC_STORE_U64(x, y)
+#define PPC_MM_STORE_U64(x, y) PPC_STORE_U64(x, y)
 #endif
 
 #ifndef PPC_CALL_FUNC
@@ -229,7 +229,7 @@ struct PPCFPSCRRegister
         csr = _mm_getcsr();
         return HostToGuest[(csr & _MM_ROUND_MASK) >> 13];
     }
-        
+
     inline void storeFromGuest(uint32_t value) noexcept
     {
         csr &= ~_MM_ROUND_MASK;
@@ -513,6 +513,8 @@ struct PPCContext
 #endif
 };
 
+// clang-format off
+
 inline uint8_t VectorMaskL[] =
 {
     0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
@@ -593,7 +595,9 @@ inline uint8_t VectorShiftTableR[] =
     0x10, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01,
 };
 
-inline __m128i _mm_adds_epu32(__m128i a, __m128i b) 
+// clang-format on
+
+inline __m128i _mm_adds_epu32(__m128i a, __m128i b)
 {
     return _mm_add_epi32(a, _mm_min_epu32(_mm_xor_si128(a, _mm_cmpeq_epi32(a, a)), b));
 }

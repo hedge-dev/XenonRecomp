@@ -1,6 +1,6 @@
 #pragma once
-#include <memory>
 #include "xbox.h"
+#include <memory>
 
 inline constexpr uint8_t Xex2RetailKey[16] = { 0x20, 0xB1, 0x85, 0xA5, 0x9D, 0x28, 0xFD, 0xC3, 0x40, 0x58, 0x3F, 0xBB, 0x08, 0x96, 0xBF, 0x91 };
 inline constexpr uint8_t AESBlankIV[16] = {};
@@ -193,7 +193,7 @@ struct Xex2ImportHeader
     be<uint32_t> numImports;
 };
 
-struct Xex2ImportLibrary 
+struct Xex2ImportLibrary
 {
     be<uint32_t> size;
     char nextImportDigest[0x14];
@@ -204,12 +204,12 @@ struct Xex2ImportLibrary
     be<uint16_t> numberOfImports;
 };
 
-struct Xex2ImportDescriptor 
+struct Xex2ImportDescriptor
 {
     be<uint32_t> firstThunk; // VA XEX_THUNK_DATA
 };
 
-struct Xex2ThunkData 
+struct Xex2ThunkData
 {
     union
     {

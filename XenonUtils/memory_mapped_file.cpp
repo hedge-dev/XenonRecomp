@@ -1,10 +1,10 @@
 #include "memory_mapped_file.h"
 
 #if !defined(_WIN32)
-#   include <cstring>
-#   include <cstdio>
-#   include <fcntl.h>
-#   include <unistd.h>
+#include <cstdio>
+#include <cstring>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 MemoryMappedFile::MemoryMappedFile()
@@ -12,7 +12,7 @@ MemoryMappedFile::MemoryMappedFile()
     // Default constructor.
 }
 
-MemoryMappedFile::MemoryMappedFile(const std::filesystem::path &path)
+MemoryMappedFile::MemoryMappedFile(const std::filesystem::path& path)
 {
     open(path);
 }
@@ -22,7 +22,7 @@ MemoryMappedFile::~MemoryMappedFile()
     close();
 }
 
-MemoryMappedFile::MemoryMappedFile(MemoryMappedFile &&other)
+MemoryMappedFile::MemoryMappedFile(MemoryMappedFile&& other)
 {
 #if defined(_WIN32)
     fileHandle = other.fileHandle;
@@ -45,7 +45,7 @@ MemoryMappedFile::MemoryMappedFile(MemoryMappedFile &&other)
 #endif
 }
 
-bool MemoryMappedFile::open(const std::filesystem::path &path)
+bool MemoryMappedFile::open(const std::filesystem::path& path)
 {
 #if defined(_WIN32)
     fileHandle = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -154,9 +154,9 @@ bool MemoryMappedFile::isOpen() const
 #endif
 }
 
-uint8_t *MemoryMappedFile::data() const
+uint8_t* MemoryMappedFile::data() const
 {
-    return reinterpret_cast<uint8_t *>(fileView);
+    return reinterpret_cast<uint8_t*>(fileView);
 }
 
 size_t MemoryMappedFile::size() const
