@@ -16,4 +16,4 @@
 #include <xbox.h>
 #include <xxhash.h>
 #include <fmt/core.h>
-#include <xmmintrin.h>
+#include <x86/sse.h>
