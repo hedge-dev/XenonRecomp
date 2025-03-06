@@ -1,0 +1,25 @@
+name: Clang Format
+on:
+    push:
+      paths-ignore:
+        - "**/*.md"
+        - '**/*.txt'
+        - 'thirdparty/*'
+    pull_request:
+      paths-ignore:
+        - "**/*.md"
+        - '**/*.txt'
+        - 'thirdparty/*'
+    workflow_dispatch:
+jobs:
+    clang-format:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Run clang-format
+          uses: jidicula/clang-format-action@v4.14.0
+          with:
+            exclude-regex: (thirdparty)
+            clang-format-version: 19

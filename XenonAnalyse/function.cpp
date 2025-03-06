@@ -1,10 +1,10 @@
 #include "function.h"
+#include <algorithm>
+#include <bit>
+#include <byteswap.h>
+#include <cassert>
 #include <disasm.h>
 #include <vector>
-#include <bit>
-#include <algorithm>
-#include <cassert>
-#include <byteswap.h>
 
 size_t Function::SearchBlock(size_t address) const
 {
@@ -40,7 +40,7 @@ size_t Function::SearchBlock(size_t address) const
 
 Function Function::Analyze(const void* code, size_t size, size_t base)
 {
-    Function fn{ base, 0 };
+    Function fn { base, 0 };
 
     if (*((uint32_t*)code + 1) == 0x04000048) // shifted ptr tail call
     {
@@ -55,14 +55,16 @@ Function Function::Analyze(const void* code, size_t size, size_t base)
     const auto* data = (uint32_t*)code;
     const auto* dataStart = data;
     const auto* dataEnd = (uint32_t*)((uint8_t*)code + size);
-    std::vector<size_t> blockStack{};
+    std::vector<size_t> blockStack {};
     blockStack.reserve(32);
     blockStack.emplace_back();
 
-    #define RESTORE_DATA() if (!blockStack.empty()) data = (dataStart + ((blocks[blockStack.back()].base + blocks[blockStack.back()].size) / sizeof(*data))) - 1; // continue adds one
+#define RESTORE_DATA()       \
+    if (!blockStack.empty()) \
+        data = (dataStart + ((blocks[blockStack.back()].base + blocks[blockStack.back()].size) / sizeof(*data))) - 1; // continue adds one
 
     // TODO: Branch fallthrough
-    for (; data <= dataEnd ; ++data)
+    for (; data <= dataEnd; ++data)
     {
         const size_t addr = base + ((data - dataStart) * sizeof(*data));
         if (blockStack.empty())
@@ -82,7 +84,7 @@ Function Function::Analyze(const void* code, size_t size, size_t base)
         ppc::Disassemble(data, addr, insn);
 
         // Sanity check
-        assert(addr == base + curBlock.base  + curBlock.size);
+        assert(addr == base + curBlock.base + curBlock.size);
         if (curBlock.projectedSize != -1 && curBlock.size >= curBlock.projectedSize) // fallthrough
         {
             blockStack.pop_back();
@@ -172,7 +174,7 @@ Function Function::Analyze(const void* code, size_t size, size_t base)
                         blocks.emplace_back(branchBase, 0, sizeProjection);
 
                         blockStack.emplace_back(blocks.size() - 1);
-                        
+
                         DEBUG(blocks.back().parent = blockBase);
                         RESTORE_DATA();
                         continue;
@@ -214,9 +216,7 @@ Function Function::Analyze(const void* code, size_t size, size_t base)
     if (blocks.size() > 1)
     {
         std::sort(blocks.begin(), blocks.end(), [](const Block& a, const Block& b)
-        {
-            return a.base < b.base;
-        });
+            { return a.base < b.base; });
 
         size_t discontinuity = -1;
         for (size_t i = 0; i < blocks.size() - 1; i++)

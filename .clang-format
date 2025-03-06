@@ -1,0 +1,17 @@
+BasedOnStyle: LLVM
+UseTab: Never
+IndentWidth: 4
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Left
+BreakBeforeBraces: Allman
+LineEnding: LF
+ColumnLimit: 0
+IndentCaseLabels: false
+InsertNewlineAtEOF: true
+Cpp11BracedListStyle: false
+SpaceBeforeCpp11BracedList: true
+AlignAfterOpenBracket: DontAlign
+ContinuationIndentWidth: 4
+AllowAllArgumentsOnNextLine: false
+SpaceAfterTemplateKeyword: false
