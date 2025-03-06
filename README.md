@@ -1,4 +1,4 @@
-# XenonRecomp
+# XenonRecomp minor update
 
 XenonRecomp is a tool that converts Xbox 360 executables into C++ code, which can then be recompiled for any platform. Currently, it only supports x86 platforms due to the use of x86 intrinsics.
 
