@@ -89,12 +89,11 @@ with open(ida_html, 'r') as file:
                 curr_addr = line[colon_idx+1:colon_idx+9]
 
                 # Check if this is the start of a function
-                if re.search('^\.text:'+curr_addr+' </s pan><span class="c[0-9]*">sub_'+curr_addr, line):
+                if re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">sub_'+curr_addr, line):
                     # Check if this is a new function and not part of a switch
                     if num_functs > 0:
                         # If the referencing function is not the last added function, then it is not part of a switch
-                        equal_xref = compare_xref_addr(line, functs[num_functs-1][0])
-                        if equal_xref:
+                        if not compare_xref_addr(line, functs[num_functs-1][0]):
                             # Add this address as a new function
                             functs.append([curr_addr, 0])
                             num_functs = num_functs+1
