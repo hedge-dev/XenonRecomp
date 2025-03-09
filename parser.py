@@ -75,11 +75,17 @@ in_text = False
 # Mark if we should end parsing
 end_parse = False
 
+# Initialize address of last bctr instruction to 0
+bctr_addr = '00000000'
+
 # Initialize address of last blr instruction to 0
 blr_addr = '00000000'
 
-# Initialize address of last bctr instruction to 0
-bctr_addr = '00000000'
+# Initialize address of last 'End of function' comment to 0
+eof_addr = '00000000'
+
+# Initialize address of last restgprlr instruction to 0
+restgprlr_addr = '00000000'
 
 # Initialize address of last padding to 0
 pad_addr = 0
@@ -103,8 +109,8 @@ with open(ida_html, 'r') as file:
 
                     # If this is not the first function being added
                     if num_functs > 0:
-                        # If last address had padding, then this function was already added
-                        if curr_addr_int-4 == pad_addr:
+                        # If last address had padding or restgprlr instruction, then this function was already added
+                        if curr_addr_int-4 == pad_addr or curr_addr_int-4 == restgprlr_addr:
                             # Set function type for start address
                             functs[num_functs-1][3] = 'sub'
                         else:
@@ -130,59 +136,31 @@ with open(ida_html, 'r') as file:
                     curr_funct = functs[num_functs-1]
                     # If previous address was a blr instruction
                     if curr_addr_int-4 == int(blr_addr, 16):
-                        # If last added function is a subroutine and has no nested functions
-                        if curr_funct[3] == 'sub' and not curr_funct[2]:
-                            xref_idx = line.find('XREF: sub_')
-                            # If XREF is a subroutine
+                        # If previous address had an 'End of function' comment or if there was a bctr with the comment
+                        if blr_addr == eof_addr or bctr_addr == eof_addr:
+                            # Find a XREF pointing to a .text address
+                            xref_idx = line.find('XREF: .text:')
                             if xref_idx > -1:
-                                xref = line[xref_idx+10:xref_idx+18]
-                                # If the XREF is equivalent to the last function's start address
-                                if int(xref, 16) == curr_funct[0]:
-                                    # Store as nested function in latest function
-                                    functs[num_functs-1][2].append(xref)
-                                # If not, add this address as a new function
-                                else: 
-                                    add_function(curr_addr_int, curr_addr_int, 'loc')
-                            # If not, add this address as new function
-                            else:
-                                add_function(curr_addr_int, curr_addr_int, 'loc')
-
-                        # If last added function is not a subroutine or has nested functions:
-                        else:
-                            # Check for XREF to subroutine
-                            xref_idx = line.find('XREF: sub_')
-                            if xref_idx > -1:
-                                xref = line[xref_idx+10:xref_idx+18]
-                            # If not found, check for XREF to .text address
-                            else:
-                                xref_idx = line.find('XREF: .text:')
-                                if xref_idx > -1:
-                                    underscore_idx = line.find('_', xref_idx)
-                                    # If referencing sub_, loc_, etc.
-                                    if underscore_idx > -1:
-                                        xref = line[underscore_idx+1:underscore_idx+9]
-                                    # Else, there's only the address after .text
-                                    else:
-                                        xref = line[xref_idx+12:xref_idx+20]
+                                underscore_idx = line.find('_', xref_idx)
+                                if underscore_idx > -1:
+                                    xref = line[underscore_idx+1:underscore_idx+9]
                                 else:
-                                    xref = '-1'
-                                
-                            # If XREF points to subroutine or .text address before current address
-                            if int(xref, 16) < curr_addr_int:
-                                # Store as nested function
-                                functs[num_functs-1][2].append(xref)
-                            # If not, add this address as new funciton
+                                    xref = line[xref_idx+12:xref_idx+20]
                             else:
+                                xref = None
+
+                            # Couldn't find XREF pointing to .text address or the XREF is after this address
+                            if xref == None or int(xref, 16) > curr_addr_int:
+                                # Add as new function
                                 add_function(curr_addr_int, curr_addr_int, 'loc')
 
-                    # If not, store as nested function in latest function
                     else:
                         # Find address of function that references this
-                        xref_idx = line.find('XREF: sub_')
+                        xref_idx = line.find('CODE XREF: sub_')
                         # If it was found
                         if xref_idx > -1:
                             # Store as nested function in latest function
-                            functs[num_functs-1][2].append(line[xref_idx+10:xref_idx+18])
+                            functs[num_functs-1][2].append(line[xref_idx+15:xref_idx+23])
 
                 # Check if this line is padding
                 elif num_functs > 0 and re.search('<span class="c[0-9]*">\.long </span><span class="c[0-9]*">0$', line):
@@ -196,8 +174,26 @@ with open(ida_html, 'r') as file:
                     pad_addr = curr_addr_int
 
                 # Check for blr instruction
-                elif re.search('<span class="c[0-9]*">blr', line):
-                    blr_addr = curr_addr 
+                elif re.search('<span class="c[0-9]*">blr$', line):
+                    blr_addr = curr_addr
+
+                # Check for 'End of function' comment
+                elif re.search('End of function ', line):
+                    eof_addr = curr_addr
+    
+                # Check for bctr instruction
+                elif re.search('<span class="c[0-9]*">bctr$', line):
+                    bctr_addr = curr_addr
+
+                # Check for restgprlr instruction
+                elif re.search('<span class="c[0-9]*">b         </span><span class="c[0-9]*">__restgprlr_[0-9][0-9]$', line):
+                    # Convert current address to integer 
+                    curr_addr_int = int(curr_addr, 16)
+
+                    # Add a new function at the line after restgprlr instruction, and end the current function at this address
+                    add_function(curr_addr_int+4, curr_addr_int, None)
+                    
+                    restgprlr_addr = curr_addr_int
 
             # If not in .text
             else:
