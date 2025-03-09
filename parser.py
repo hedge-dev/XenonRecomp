@@ -21,6 +21,9 @@ ida_html = sys.argv[1]
 xenonrecomp_log = sys.argv[2]
 output_file = sys.argv[3]
 
+# Disable extra debug output 
+debug = False
+
 ##
 ## Parse XenonRecomp log
 ##
@@ -37,7 +40,7 @@ with open(xenonrecomp_log, 'r') as file:
     # Read each line in the file
     for line in file: 
         # If this line describes an error, it has the address of a problematic switch statement
-        if re.search('ERROR', line) != None:
+        if re.search('ERROR: Switch case at ', line) != None:
             # Save the address as integer
             switch_addrs.append(line[switch_idx:switch_idx+8])
 
@@ -55,14 +58,14 @@ functs = []
 num_functs = 0
 
 # Function for adding to function list and incrementing count
-def add_function(new_start_addr, prev_end_addr):
+def add_function(new_start_addr, prev_end_addr, start_type):
     global num_functs
     # If an end address for the last added function was specified
     if prev_end_addr != None:
         # Set end address for last added function
         functs[num_functs-1][1] = prev_end_addr
     # Add a new function to the list with the specified starting address
-    functs.append([new_start_addr, 0, []])
+    functs.append([new_start_addr, 0, [], start_type])
     # Increment the number of functions
     num_functs = num_functs+1
 
@@ -75,8 +78,11 @@ end_parse = False
 # Initialize address of last blr instruction to 0
 blr_addr = '00000000'
 
+# Initialize address of last bctr instruction to 0
+bctr_addr = '00000000'
+
 # Initialize address of last padding to 0
-pad_addr = '00000000'
+pad_addr = 0
 
 # Import each line of decompiled code
 print("Parsing IDA HTML...")
@@ -95,32 +101,80 @@ with open(ida_html, 'r') as file:
                     # Save current address as integer
                     curr_addr_int = int(curr_addr, 16)
 
+                    # If this is not the first function being added
                     if num_functs > 0:
                         # If last address had padding, then this function was already added
-                        if not curr_addr_int-4 == int(pad_addr, 16):
+                        if curr_addr_int-4 == pad_addr:
+                            # Set function type for start address
+                            functs[num_functs-1][3] = 'sub'
+                        else:
                             # Check if this function is part of latest added function
                             is_nested_funct = False
                             nested_functs = functs[num_functs-1][2]
                             for nested_funct in nested_functs:
-                                is_nested_funct = nested_funct==curr_addr
+                                if nested_funct == curr_addr:
+                                    is_nested_funct = True
+                                    break
                             
                             # If last address was not padding and not nested in latest function
                             if not is_nested_funct:
-                                # If this is not the first function being added
-                                if num_functs > 0:
-                                    # Add new function and last function's end address
-                                    add_function(curr_addr_int, curr_addr_int)
+                                # Add new function and last function's end address
+                                add_function(curr_addr_int, curr_addr_int, 'sub')
                     else:
                         # Add new function
-                        add_function(curr_addr_int, None)
+                        add_function(curr_addr_int, None, 'sub')
 
                 # If this is a location
                 elif re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">loc_'+curr_addr, line):
                     curr_addr_int = int(curr_addr, 16)
+                    curr_funct = functs[num_functs-1]
                     # If previous address was a blr instruction
-                    if curr_addr_int-4 == blr_addr:
-                        print(curr_addr)
-                        add_function(curr_addr_int, curr_addr_int)
+                    if curr_addr_int-4 == int(blr_addr, 16):
+                        # If last added function is a subroutine and has no nested functions
+                        if curr_funct[3] == 'sub' and not curr_funct[2]:
+                            xref_idx = line.find('XREF: sub_')
+                            # If XREF is a subroutine
+                            if xref_idx > -1:
+                                xref = line[xref_idx+10:xref_idx+18]
+                                # If the XREF is equivalent to the last function's start address
+                                if int(xref, 16) == curr_funct[0]:
+                                    # Store as nested function in latest function
+                                    functs[num_functs-1][2].append(xref)
+                                # If not, add this address as a new function
+                                else: 
+                                    add_function(curr_addr_int, curr_addr_int, 'loc')
+                            # If not, add this address as new function
+                            else:
+                                add_function(curr_addr_int, curr_addr_int, 'loc')
+
+                        # If last added function is not a subroutine or has nested functions:
+                        else:
+                            # Check for XREF to subroutine
+                            xref_idx = line.find('XREF: sub_')
+                            if xref_idx > -1:
+                                xref = line[xref_idx+10:xref_idx+18]
+                            # If not found, check for XREF to .text address
+                            else:
+                                xref_idx = line.find('XREF: .text:')
+                                if xref_idx > -1:
+                                    underscore_idx = line.find('_', xref_idx)
+                                    # If referencing sub_, loc_, etc.
+                                    if underscore_idx > -1:
+                                        xref = line[underscore_idx+1:underscore_idx+9]
+                                    # Else, there's only the address after .text
+                                    else:
+                                        xref = line[xref_idx+12:xref_idx+20]
+                                else:
+                                    xref = '-1'
+                                
+                            # If XREF points to subroutine or .text address before current address
+                            if int(xref, 16) < curr_addr_int:
+                                # Store as nested function
+                                functs[num_functs-1][2].append(xref)
+                            # If not, add this address as new funciton
+                            else:
+                                add_function(curr_addr_int, curr_addr_int, 'loc')
+
                     # If not, store as nested function in latest function
                     else:
                         # Find address of function that references this
@@ -132,9 +186,14 @@ with open(ida_html, 'r') as file:
 
                 # Check if this line is padding
                 elif num_functs > 0 and re.search('<span class="c[0-9]*">\.long </span><span class="c[0-9]*">0$', line):
+                    # Convert current address to integer 
                     curr_addr_int = int(curr_addr, 16)
+
                     # Add a new function at the line after padding, and end the current function at this padding address
-                    add_function(curr_addr_int+4, curr_addr_int)
+                    add_function(curr_addr_int+4, curr_addr_int, None)
+                    
+                    # Save padding address
+                    pad_addr = curr_addr_int
 
                 # Check for blr instruction
                 elif re.search('<span class="c[0-9]*">blr', line):
@@ -175,7 +234,11 @@ for switch_addr in switch_addrs:
             curr_funct_end = curr_funct[1]
             if(switch_addr_int <= curr_funct_end):
                 # Save current function's start address and the function's length
-                output_functs.append([hex(curr_funct_start), hex(curr_funct_end-curr_funct_start), switch_addr])
+                if debug:
+                    output_functs.append([hex(curr_funct_start), hex(curr_funct_end-curr_funct_start), switch_addr])
+                else:
+                    output_functs.append([hex(curr_funct_start), hex(curr_funct_end-curr_funct_start)])
+            
                 # Don't need to continue search for this switch statement
                 search_for_funct = False
 
@@ -184,23 +247,42 @@ for switch_addr in switch_addrs:
 
         # Related function was not found
         else:
-            print(f"WARNING: Function relating to {switch_addr} not found")
+            print(f"WARNING: Function relating to {switch_addr} not found! Skipping.")
             # Don't need to continue search for this switch statement
             search_for_funct = False
 
-print(f"{len(output_functs)} functions found!")                
+# Remove duplicates
+if not debug: 
+    output_functs = list(set(tuple(funct) for funct in output_functs))
+
+# Make sure there are no functions with the same starting address but different lengths
+for i in range(len(output_functs)):
+    for j in range(i+1, len(output_functs)):
+        curr_funct_start = output_functs[i][0]
+        if curr_funct_start == output_functs[j][0]:
+            print(f"WARNING: {curr_funct_start} has multiple entries of different lengths, manually find correct one.")
+
+print(f"{len(output_functs)} functions found!")
+
+##
+## Output all found functions to TOML in correct format
+##
 
 # Create formatted string to export to TOML
 output_str = "functions = ["
 
 # Append all function addresses and lengths to formatted string
+print("Outputting to formatted file...")
 for funct in output_functs:
     # Format hex to uppercase 
     curr_funct_start = '0x'+funct[0][2:].upper()
     curr_funct_end = '0x'+funct[1][2:].upper()
 
     # Format function 
-    curr_funct = "\n    { address = "+curr_funct_start+", size = "+curr_funct_end+" src = "+funct[2]+" },"
+    curr_funct = "\n    { address = "+curr_funct_start+", size = "+curr_funct_end
+    if debug:
+        curr_funct = curr_funct+", src = "+funct[2]
+    curr_funct = curr_funct+" },"
 
     # Add to complete output string
     output_str = output_str+curr_funct
