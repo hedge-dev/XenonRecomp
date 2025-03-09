@@ -48,30 +48,32 @@ switch_addrs = set(switch_addrs)
 ## Parse IDA HTML
 ##
 
-# See if current function is referenced by the inputted comparison address 
-def compare_xref_addr(line, compare_addr):
-    # Get the address of the referencing function
-    xref_idx = line.find('CODE XREF: sub_')
-    # If there is not a referencing function or it is in a different file, this doesn't need to be verified
-    if xref_idx == -1:
-        return True
-    else:
-        xref = line[xref_idx+15:xref_idx+23]
-
-    # Check equality between XREF address and comparison address
-    return xref == compare_addr
-
 # Initialize list to store start and end of functions 
 functs = []
 
 # Count how many functions have been added
 num_functs = 0
 
+# Function for adding to function list and incrementing count
+def add_function(new_start_addr, prev_end_addr):
+    global num_functs
+    # If an end address for the last added function was specified
+    if prev_end_addr != None:
+        # Set end address for last added function
+        functs[num_functs-1][1] = prev_end_addr
+    # Add a new function to the list with the specified starting address
+    functs.append([new_start_addr, 0, []])
+    # Increment the number of functions
+    num_functs = num_functs+1
+
 # Mark if we are in .text section
 in_text = False
 
 # Mark if we should end parsing
 end_parse = False
+
+# Initialize address of last blr instruction to 0
+blr_addr = '00000000'
 
 # Initialize address of last padding to 0
 pad_addr = '00000000'
@@ -89,58 +91,54 @@ with open(ida_html, 'r') as file:
                 curr_addr = line[colon_idx+1:colon_idx+9]
 
                 # Check if this is the start of a function
-                if re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">sub_'+curr_addr, line):
-                    # Check if this is a new function and not part of a switch
+                if re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">sub_'+curr_addr+'</span><span class="c[0-9]*">: *</span><span class="c[0-9]*"># [A-Z][A-Z][A-Z][A-Z] XREF:.*', line):
+                    # Save current address as integer
+                    curr_addr_int = int(curr_addr, 16)
+
                     if num_functs > 0:
-                        # If the referencing function is not the last added function, then it is not part of a switch
-                        if not compare_xref_addr(line, functs[num_functs-1][0]):
-                            # Add this address as a new function
-                            functs.append([curr_addr, 0])
-                            num_functs = num_functs+1
-                            # Convert addresses to integer for comparison
-                            curr_addr_int = int(curr_addr, 16)
-                            pad_addr_int = int(pad_addr, 16)
-                            # If previous address was padding, end last function at the padding
-                            if curr_addr_int-4 == pad_addr_int:
-                                functs[num_functs-2][1] = pad_addr_int
-                            # Else, end last function as this address
-                            else:
-                                functs[num_functs-2][1] = curr_addr_int
-
-                    # If this is the first function to be added, don't need to check if it is part of a switch
+                        # If last address had padding, then this function was already added
+                        if not curr_addr_int-4 == int(pad_addr, 16):
+                            # Check if this function is part of latest added function
+                            is_nested_funct = False
+                            nested_functs = functs[num_functs-1][2]
+                            for nested_funct in nested_functs:
+                                is_nested_funct = nested_funct==curr_addr
+                            
+                            # If last address was not padding and not nested in latest function
+                            if not is_nested_funct:
+                                # If this is not the first function being added
+                                if num_functs > 0:
+                                    # Add new function and last function's end address
+                                    add_function(curr_addr_int, curr_addr_int)
                     else:
-                        # Add this address as a new function
-                        functs.append([curr_addr, 0])
-                        num_functs = num_functs+1
+                        # Add new function
+                        add_function(curr_addr_int, None)
 
-                # If this is not the start of a function
-                else:
-                    # Check if it is a nested loc_ or def_
-                    if re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">[ld][oe][cf]_'+curr_addr, line):
-                        # If the referencing function is not the last added function, then it is not part of a switch
-                        if not compare_xref_addr(line, functs[num_functs-1][0]):
-                            # Add this address as a new function
-                            functs.append([curr_addr, 0])
-                            num_functs = num_functs+1
-                            # Convert addresses to integer for comparison
-                            curr_addr_int = int(curr_addr, 16)
-                            pad_addr_int = int(pad_addr, 16)
-                            # If previous address was padding, end last function at the padding
-                            if curr_addr_int-4 == pad_addr_int:
-                                functs[num_functs-2][1] = pad_addr_int
-                            # End the last function at the previous address
-                            else:
-                                functs[num_functs-2][1] = curr_addr_int
-                    
-                    # Check if this line is padding
-                    elif re.search('<span class="c[0-9]*">\.long </span><span class="c[0-9]*">0$', line):
-                        # Save address of most recently found padding
-                        pad_addr = curr_addr
+                # If this is a location
+                elif re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">loc_'+curr_addr, line):
+                    curr_addr_int = int(curr_addr, 16)
+                    # If previous address was a blr instruction
+                    if curr_addr_int-4 == blr_addr:
+                        print(curr_addr)
+                        add_function(curr_addr_int, curr_addr_int)
+                    # If not, store as nested function in latest function
+                    else:
+                        # Find address of function that references this
+                        xref_idx = line.find('XREF: sub_')
+                        # If it was found
+                        if xref_idx > -1:
+                            # Store as nested function in latest function
+                            functs[num_functs-1][2].append(line[xref_idx+10:xref_idx+18])
 
-                    # Check if we are still in .text
-                    elif re.search('\.text:', line) == None:
-                        # If not, end parsing
-                            end_parse = True
+                # Check if this line is padding
+                elif num_functs > 0 and re.search('<span class="c[0-9]*">\.long </span><span class="c[0-9]*">0$', line):
+                    curr_addr_int = int(curr_addr, 16)
+                    # Add a new function at the line after padding, and end the current function at this padding address
+                    add_function(curr_addr_int+4, curr_addr_int)
+
+                # Check for blr instruction
+                elif re.search('<span class="c[0-9]*">blr', line):
+                    blr_addr = curr_addr 
 
             # If not in .text
             else:
@@ -171,13 +169,13 @@ for switch_addr in switch_addrs:
     while(search_for_funct):
         curr_funct = functs[curr_funct_idx]
         # If switch address is after this function's start
-        curr_funct_start = int(curr_funct[0], 16)
+        curr_funct_start = curr_funct[0]
         if(switch_addr_int > curr_funct_start):
             # If switch address is before this function's end
             curr_funct_end = curr_funct[1]
             if(switch_addr_int <= curr_funct_end):
                 # Save current function's start address and the function's length
-                output_functs.append([hex(curr_funct_start), hex(curr_funct_end-curr_funct_start)])
+                output_functs.append([hex(curr_funct_start), hex(curr_funct_end-curr_funct_start), switch_addr])
                 # Don't need to continue search for this switch statement
                 search_for_funct = False
 
@@ -202,7 +200,7 @@ for funct in output_functs:
     curr_funct_end = '0x'+funct[1][2:].upper()
 
     # Format function 
-    curr_funct = "\n    { address = "+curr_funct_start+", size = "+curr_funct_end+" },"
+    curr_funct = "\n    { address = "+curr_funct_start+", size = "+curr_funct_end+" src = "+funct[2]+" },"
 
     # Add to complete output string
     output_str = output_str+curr_funct
