@@ -14,7 +14,7 @@ import re
 
 # Check if correct number of input arguments were given
 if len(sys.argv) != 4:
-    sys.exit("parser.py [IDA HTML] [XenonRecomp log] [Output TOML]")
+    sys.exit("Auto_Function_Parser.py [IDA HTML] [XenonRecomp log] [Output TOML]")
 
 # Filepath input arguments
 ida_html = sys.argv[1]
