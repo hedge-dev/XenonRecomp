@@ -252,11 +252,12 @@ if not debug:
     output_functs = list(set(tuple(funct) for funct in output_functs))
 
 # Make sure there are no functions with the same starting address but different lengths
-for i in range(len(output_functs)):
-    for j in range(i+1, len(output_functs)):
-        curr_funct_start = output_functs[i][0]
-        if curr_funct_start == output_functs[j][0]:
-            print(f"WARNING: {curr_funct_start} has multiple entries of different lengths, manually find correct one.")
+if not debug:
+    for i in range(len(output_functs)):
+        for j in range(i+1, len(output_functs)):
+            curr_funct_start = output_functs[i][0]
+            if curr_funct_start == output_functs[j][0]:
+                print(f"WARNING: {curr_funct_start} has multiple entries of different lengths, manually find correct one.")
 
 print(f"{len(output_functs)} functions found!")
 
