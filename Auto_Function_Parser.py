@@ -103,7 +103,7 @@ with open(ida_html, 'r') as file:
                 curr_addr = line[colon_idx+1:colon_idx+9]
 
                 # Check if this is the start of a function
-                if re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">sub_'+curr_addr+'</span><span class="c[0-9]*">: *</span><span class="c[0-9]*"># [A-Z][A-Z][A-Z][A-Z] XREF:.*', line):
+                if re.search('.text:'+curr_addr+' </span><span class="c[0-9]*">sub_'+curr_addr+'</span><span class="c[0-9]*">: *</span><span class="c[0-9]*"># [A-Z][A-Z][A-Z][A-Z] XREF:', line):
                     # Save current address as integer
                     curr_addr_int = int(curr_addr, 16)
 
