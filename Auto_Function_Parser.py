@@ -40,7 +40,7 @@ with open(xenonrecomp_log, 'r') as file:
     # Read each line in the file
     for line in file: 
         # If this line describes an error, it has the address of a problematic switch statement
-        if re.search('ERROR: Switch case at ', line) != None:
+        if re.search('ERROR: Switch case at ', line):
             # Save the address as integer
             switch_addrs.append(line[switch_idx:switch_idx+8])
 
@@ -103,7 +103,7 @@ with open(ida_html, 'r') as file:
                 curr_addr = line[colon_idx+1:colon_idx+9]
 
                 # Check if this is the start of a function
-                if re.search('.text:'+curr_addr+' </span><span class="c[0-9]*">sub_'+curr_addr+'</span><span class="c[0-9]*">: *</span><span class="c[0-9]*"># [A-Z][A-Z][A-Z][A-Z] XREF:', line):
+                if re.search(r'\.text:'+curr_addr+' </span><span class="c[0-9]*">sub_'+curr_addr+'</span><span class="c[0-9]*">: *</span><span class="c[0-9]*"># [A-Z][A-Z][A-Z][A-Z] XREF:', line):
                     # Save current address as integer
                     curr_addr_int = int(curr_addr, 16)
 
@@ -131,7 +131,7 @@ with open(ida_html, 'r') as file:
                         add_function(curr_addr_int, None, 'sub')
 
                 # If this is a location
-                elif re.search('^\.text:'+curr_addr+' </span><span class="c[0-9]*">loc_'+curr_addr, line):
+                elif re.search(r'^\.text:'+curr_addr+' </span><span class="c[0-9]*">loc_'+curr_addr, line):
                     curr_addr_int = int(curr_addr, 16)
                     curr_funct = functs[num_functs-1]
                     # If previous address was a blr instruction
@@ -163,7 +163,7 @@ with open(ida_html, 'r') as file:
                             functs[num_functs-1][2].append(line[xref_idx+15:xref_idx+23])
 
                 # Check if this line is padding
-                elif num_functs > 0 and re.search('<span class="c[0-9]*">\.long </span><span class="c[0-9]*">0$', line):
+                elif num_functs > 0 and re.search(r'<span class="c[0-9]*">\.long </span><span class="c[0-9]*">0$', line):
                     # Convert current address to integer 
                     curr_addr_int = int(curr_addr, 16)
 
@@ -198,7 +198,7 @@ with open(ida_html, 'r') as file:
             # If not in .text
             else:
                 # If .text section header found
-                if re.search('<span class="c[0-9]*">\.section &quot;\.text&quot;', line) != None:
+                if re.search(r'<span class="c[0-9]*">\.section &quot;\.text&quot;', line):
                     in_text = True
 
 ##
