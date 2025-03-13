@@ -21,19 +21,20 @@ struct SwitchTable
     uint32_t type{};
 };
 
-static const std::vector<uint8_t> RESTGPRLR_14 = { 0xe9, 0xc1, 0xff, 0x68 };
-static const std::vector<uint8_t> SAVEGPRLR_14 = { 0xf9, 0xc1, 0xff, 0x68 };
-static const std::vector<uint8_t> RESTFPR_14 = { 0xc9, 0xcc, 0xff, 0x70 };
-static const std::vector<uint8_t> SAVEFPR_14 = { 0xd9, 0xcc, 0xff, 0x70 };
-static const std::vector<uint8_t> RESTVMX_14 = { 0x39, 0x60, 0xfe, 0xe0, 0x7d, 0xcb, 0x60, 0xce };
-static const std::vector<uint8_t> SAVEVMX_14 = { 0x39, 0x60, 0xfe, 0xe0, 0x7d, 0xcb, 0x61, 0xce };
-static const std::vector<uint8_t> RESTVMX_64 = { 0x39, 0x60, 0xfc, 0x00, 0x10, 0x0b, 0x60, 0xcb };
-static const std::vector<uint8_t> SAVEVMX_64 = { 0x39, 0x60, 0xfc, 0x00, 0x10, 0x0b, 0x61, 0xcb };
+static const uint8_t RESTGPRLR_14[] = { 0xe9, 0xc1, 0xff, 0x68 };
+static const uint8_t SAVEGPRLR_14[] = { 0xf9, 0xc1, 0xff, 0x68 };
+static const uint8_t RESTFPR_14[] = { 0xc9, 0xcc, 0xff, 0x70 };
+static const uint8_t SAVEFPR_14[] = { 0xd9, 0xcc, 0xff, 0x70 };
+static const uint8_t RESTVMX_14[] = { 0x39, 0x60, 0xfe, 0xe0, 0x7d, 0xcb, 0x60, 0xce };
+static const uint8_t SAVEVMX_14[] = { 0x39, 0x60, 0xfe, 0xe0, 0x7d, 0xcb, 0x61, 0xce };
+static const uint8_t RESTVMX_64[] = { 0x39, 0x60, 0xfc, 0x00, 0x10, 0x0b, 0x60, 0xcb };
+static const uint8_t SAVEVMX_64[] = { 0x39, 0x60, 0xfc, 0x00, 0x10, 0x0b, 0x61, 0xcb };
 
-uint32_t BytePatternSearch(uint8_t* data, uint32_t size, uint32_t baseAddress, const std::vector<uint8_t>& pattern)
+
+uint32_t BytePatternSearch(uint8_t* data, const uint32_t dataSize, const uint32_t baseAddress, const uint8_t pattern[], const size_t patternSize)
 {
-    auto result = std::search(data, data + size, pattern.begin(), pattern.end());
-    if (result != data + size) {
+    auto result = std::search(data, data + dataSize, pattern, pattern + patternSize);
+    if (result != data + dataSize) {
         return baseAddress + std::distance(data, result);
     }
 
@@ -53,14 +54,14 @@ void RegisterFunctionsSearch(Image& image)
                 return;
             }
 
-            uint32_t restgprlr_14 = BytePatternSearch(section.data, section.size, baseAddress, RESTGPRLR_14);
-            uint32_t savegprlr_14 = BytePatternSearch(section.data, section.size, baseAddress, SAVEGPRLR_14);
-            uint32_t restfpr_14 = BytePatternSearch(section.data, section.size, baseAddress, RESTFPR_14);
-            uint32_t savefpr_14 = BytePatternSearch(section.data, section.size, baseAddress, SAVEFPR_14);
-            uint32_t restvmx_14 = BytePatternSearch(section.data, section.size, baseAddress, RESTVMX_14);
-            uint32_t savevmx_14 = BytePatternSearch(section.data, section.size, baseAddress, SAVEVMX_14);
-            uint32_t restvmx_64 = BytePatternSearch(section.data, section.size, baseAddress, RESTVMX_64);
-            uint32_t savevmx_64 = BytePatternSearch(section.data, section.size, baseAddress, SAVEVMX_64);
+            uint32_t restgprlr_14 = BytePatternSearch(section.data, section.size, baseAddress, RESTGPRLR_14, sizeof(RESTGPRLR_14));
+            uint32_t savegprlr_14 = BytePatternSearch(section.data, section.size, baseAddress, SAVEGPRLR_14, sizeof(SAVEGPRLR_14));
+            uint32_t restfpr_14 = BytePatternSearch(section.data, section.size, baseAddress, RESTFPR_14, sizeof(RESTFPR_14));
+            uint32_t savefpr_14 = BytePatternSearch(section.data, section.size, baseAddress, SAVEFPR_14, sizeof(SAVEFPR_14));
+            uint32_t restvmx_14 = BytePatternSearch(section.data, section.size, baseAddress, RESTVMX_14, sizeof(RESTVMX_14));
+            uint32_t savevmx_14 = BytePatternSearch(section.data, section.size, baseAddress, SAVEVMX_14, sizeof(SAVEVMX_14));
+            uint32_t restvmx_64 = BytePatternSearch(section.data, section.size, baseAddress, RESTVMX_64, sizeof(RESTVMX_64));
+            uint32_t savevmx_64 = BytePatternSearch(section.data, section.size, baseAddress, SAVEVMX_64, sizeof(SAVEVMX_64));
 
             fmt::println("restgprlr_14_address = 0x{:X}", restgprlr_14);
             fmt::println("savegprlr_14_address = 0x{:X}", savegprlr_14);
