@@ -2240,6 +2240,75 @@ bool Recompiler::Recompile(
         println("\t{}.u64 = {}.u64 ^ {};", r(insn.operands[0]), r(insn.operands[1]), insn.operands[2] << 16);
         break;
 
+        case PPC_INST_MULHD:
+    println("\t{}.u64 = ({}.u64 * {}.u64) >> 64;", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+    if (strchr(insn.opcode->name, '.'))
+        println("\t{}.compare<int64_t>({}.s64, 0);", cr(0), r(insn.operands[0]));
+    break;
+
+case PPC_INST_FRSQRTE:
+    println("\t{}.f64 = 1.0 / sqrt({}.f64);", f(insn.operands[0]), f(insn.operands[1]));
+    break;
+
+case PPC_INST_DCBST:
+    println("\t// Data Cache Block Store - system instruction, no operation in emulator");
+    break;
+
+case PPC_INST_VCFPUXWS128:
+    println("\t{}.v4sf = vec_convert_to_float({}.v4si);", v(insn.operands[0]), v(insn.operands[1]));
+    break;
+
+case PPC_INST_VPKUWUS128:
+    println("\t{}.v8hi = vec_pack_unsigned({}.v4si, {}.v4si);", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+    break;
+
+case PPC_INST_VPKUHUS128:
+    println("\t{}.v16qi = vec_pack_unsigned({}.v8hi, {}.v8hi);", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+    break;
+
+case PPC_INST_EQV:
+    println("\t{}.u64 = ~({}.u64 ^ {}.u64);", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+    if (strchr(insn.opcode->name, '.'))
+        println("\t{}.compare<int64_t>({}.s64, 0);", cr(0), r(insn.operands[0]));
+    break;
+
+case PPC_INST_VPKSWSS128:
+    println("\t{}.v8hi = vec_pack_saturate({}.v4si, {}.v4si);", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+    break;
+
+case PPC_INST_MULHDU:
+    println("\t{}.u64 = ({}.u64 * {}.u64) >> 64;", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+    if (strchr(insn.opcode->name, '.'))
+        println("\t{}.compare<uint64_t>({}.u64, 0);", cr(0), r(insn.operands[0]));
+    break;
+
+case PPC_INST_STFSU:
+    println("\t*({}.ptr) = {}.f64;", r(insn.operands[1]), f(insn.operands[0]));
+    println("\t{}.u64 = {}.u64 + {}.s64;", r(insn.operands[1]), r(insn.operands[1]), r(insn.operands[2]));
+    break;
+
+case PPC_INST_MULLHWU:
+    println("\t{}.u32 = ({}.u16 * {}.u16);", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+    if (strchr(insn.opcode->name, '.'))
+        println("\t{}.compare<uint32_t>({}.u32, 0);", cr(0), r(insn.operands[0]));
+    break;
+
+case PPC_INST_VSEL128:
+    println("\t{}.v4si = vec_sel({}.v4si, {}.v4si, {}.v4si);", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]), v(insn.operands[3]));
+    break;
+
+case PPC_INST_VNOR128:
+    println("\t{}.v4si = ~({}.v4si | {}.v4si);", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+    break;
+
+case PPC_INST_VANDC:
+    println("\t{}.v4si = {}.v4si & ~{}.v4si;", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+    break;
+
+case PPC_INST_VPKSWSS:
+    println("\t{}.v8hi = vec_pack_saturate({}.v4si, {}.v4si);", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+    break;
+
     default:
         return false;
     }
