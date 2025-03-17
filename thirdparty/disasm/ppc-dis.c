@@ -840,7 +840,7 @@ const struct powerpc_operand powerpc_operands[] =
                            { 8, 0, insert_vperm, extract_vperm, 0 },
                           
                           #define VD3D0 VPERM128 + 1
-                           { 3, 18, NULL, NULL, 0 },
+                           { 7, 18, NULL, NULL, 0 },
                           
                           #define VD3D1 VD3D0 + 1
                            { 3, 16, NULL, NULL, 0 },
