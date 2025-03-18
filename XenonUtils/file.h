@@ -18,7 +18,7 @@ inline std::vector<uint8_t> LoadFile(const std::filesystem::path& path)
 
     std::vector<uint8_t> data;
     data.resize(size);
-    stream.read((char *)(data.data()), size);
+    stream.read((char*)(data.data()), size);
     if (stream.bad())
     {
         return {};

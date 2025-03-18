@@ -17,22 +17,22 @@
 #include <climits>
 #include <fstream>
 
+#include <TinySHA1.hpp>
 #include <aes.hpp>
 #include <lzx.h>
 #include <mspack.h>
-#include <TinySHA1.hpp>
 
 #include "memory_mapped_file.h"
 
 struct mspack_memory_file
 {
     mspack_system sys;
-    void *buffer;
+    void* buffer;
     size_t bufferSize;
     size_t offset;
 };
 
-static mspack_memory_file *mspack_memory_open(mspack_system *sys, void *buffer, size_t bufferSize)
+static mspack_memory_file* mspack_memory_open(mspack_system* sys, void* buffer, size_t bufferSize)
 {
     assert(bufferSize < INT_MAX);
 
@@ -41,7 +41,7 @@ static mspack_memory_file *mspack_memory_open(mspack_system *sys, void *buffer, 
         return nullptr;
     }
 
-    mspack_memory_file *memoryFile = (mspack_memory_file *)(std::calloc(1, sizeof(mspack_memory_file)));
+    mspack_memory_file* memoryFile = (mspack_memory_file*)(std::calloc(1, sizeof(mspack_memory_file)));
     if (memoryFile == nullptr)
     {
         return memoryFile;
@@ -53,49 +53,49 @@ static mspack_memory_file *mspack_memory_open(mspack_system *sys, void *buffer, 
     return memoryFile;
 }
 
-static void mspack_memory_close(mspack_memory_file *file)
+static void mspack_memory_close(mspack_memory_file* file)
 {
     std::free(file);
 }
 
-static int mspack_memory_read(mspack_file *file, void *buffer, int chars)
+static int mspack_memory_read(mspack_file* file, void* buffer, int chars)
 {
-    mspack_memory_file *memoryFile = (mspack_memory_file *)(file);
+    mspack_memory_file* memoryFile = (mspack_memory_file*)(file);
     const size_t remaining = memoryFile->bufferSize - memoryFile->offset;
     const size_t total = std::min(size_t(chars), remaining);
-    std::memcpy(buffer, (uint8_t *)(memoryFile->buffer) + memoryFile->offset, total);
+    std::memcpy(buffer, (uint8_t*)(memoryFile->buffer) + memoryFile->offset, total);
     memoryFile->offset += total;
     return int(total);
 }
 
-static int mspack_memory_write(mspack_file *file, void *buffer, int chars)
+static int mspack_memory_write(mspack_file* file, void* buffer, int chars)
 {
-    mspack_memory_file *memoryFile = (mspack_memory_file *)(file);
+    mspack_memory_file* memoryFile = (mspack_memory_file*)(file);
     const size_t remaining = memoryFile->bufferSize - memoryFile->offset;
     const size_t total = std::min(size_t(chars), remaining);
-    std::memcpy((uint8_t *)(memoryFile->buffer) + memoryFile->offset, buffer, total);
+    std::memcpy((uint8_t*)(memoryFile->buffer) + memoryFile->offset, buffer, total);
     memoryFile->offset += total;
     return int(total);
 }
 
-static void *mspack_memory_alloc(mspack_system *sys, size_t chars)
+static void* mspack_memory_alloc(mspack_system* sys, size_t chars)
 {
     return std::calloc(chars, 1);
 }
 
-static void mspack_memory_free(void *ptr)
+static void mspack_memory_free(void* ptr)
 {
     std::free(ptr);
 }
 
-static void mspack_memory_copy(void *src, void *dest, size_t chars)
+static void mspack_memory_copy(void* src, void* dest, size_t chars)
 {
     std::memcpy(dest, src, chars);
 }
 
-static mspack_system *mspack_memory_sys_create()
+static mspack_system* mspack_memory_sys_create()
 {
-    auto sys = (mspack_system *)(std::calloc(1, sizeof(mspack_system)));
+    auto sys = (mspack_system*)(std::calloc(1, sizeof(mspack_system)));
     if (!sys)
     {
         return nullptr;
@@ -109,31 +109,31 @@ static mspack_system *mspack_memory_sys_create()
     return sys;
 }
 
-static void mspack_memory_sys_destroy(struct mspack_system *sys)
+static void mspack_memory_sys_destroy(struct mspack_system* sys)
 {
     free(sys);
 }
 
 #if defined(_WIN32)
-inline bool bitScanForward(uint32_t v, uint32_t *outFirstSetIndex)
+inline bool bitScanForward(uint32_t v, uint32_t* outFirstSetIndex)
 {
-    return _BitScanForward((unsigned long *)(outFirstSetIndex), v) != 0;
+    return _BitScanForward((unsigned long*)(outFirstSetIndex), v) != 0;
 }
 
-inline bool bitScanForward(uint64_t v, uint32_t *outFirstSetIndex)
+inline bool bitScanForward(uint64_t v, uint32_t* outFirstSetIndex)
 {
-    return _BitScanForward64((unsigned long *)(outFirstSetIndex), v) != 0;
+    return _BitScanForward64((unsigned long*)(outFirstSetIndex), v) != 0;
 }
 
 #else
-inline bool bitScanForward(uint32_t v, uint32_t *outFirstSetIndex)
+inline bool bitScanForward(uint32_t v, uint32_t* outFirstSetIndex)
 {
     int i = ffs(v);
     *outFirstSetIndex = i - 1;
     return i != 0;
 }
 
-inline bool bitScanForward(uint64_t v, uint32_t *outFirstSetIndex)
+inline bool bitScanForward(uint64_t v, uint32_t* outFirstSetIndex)
 {
     int i = __builtin_ffsll(v);
     *outFirstSetIndex = i - 1;
@@ -141,20 +141,23 @@ inline bool bitScanForward(uint64_t v, uint32_t *outFirstSetIndex)
 }
 #endif
 
-static int lzxDecompress(const void *lzxData, size_t lzxLength, void *dst, size_t dstLength, uint32_t windowSize, void *windowData, size_t windowDataLength)
+static int lzxDecompress(const void* lzxData, size_t lzxLength, void* dst, size_t dstLength, uint32_t windowSize, void* windowData, size_t windowDataLength)
 {
     int resultCode = 1;
     uint32_t windowBits;
-    if (!bitScanForward(windowSize, &windowBits)) {
+    if (!bitScanForward(windowSize, &windowBits))
+    {
         return resultCode;
     }
 
-    mspack_system *sys = mspack_memory_sys_create();
-    mspack_memory_file *lzxSrc = mspack_memory_open(sys, (void *)(lzxData), lzxLength);
-    mspack_memory_file *lzxDst = mspack_memory_open(sys, dst, dstLength);
-    lzxd_stream *lzxd = lzxd_init(sys, (mspack_file *)(lzxSrc), (mspack_file *)(lzxDst), windowBits, 0, 0x8000, dstLength, 0);
-    if (lzxd != nullptr) {
-        if (windowData != nullptr) {
+    mspack_system* sys = mspack_memory_sys_create();
+    mspack_memory_file* lzxSrc = mspack_memory_open(sys, (void*)(lzxData), lzxLength);
+    mspack_memory_file* lzxDst = mspack_memory_open(sys, dst, dstLength);
+    lzxd_stream* lzxd = lzxd_init(sys, (mspack_file*)(lzxSrc), (mspack_file*)(lzxDst), windowBits, 0, 0x8000, dstLength, 0);
+    if (lzxd != nullptr)
+    {
+        if (windowData != nullptr)
+        {
             size_t paddingLength = windowSize - windowDataLength;
             std::memset(&lzxd->window[0], 0, paddingLength);
             std::memcpy(&lzxd->window[paddingLength], windowData, windowDataLength);
@@ -165,28 +168,31 @@ static int lzxDecompress(const void *lzxData, size_t lzxLength, void *dst, size_
         lzxd_free(lzxd);
     }
 
-    if (lzxSrc) {
+    if (lzxSrc)
+    {
         mspack_memory_close(lzxSrc);
     }
 
-    if (lzxDst) {
+    if (lzxDst)
+    {
         mspack_memory_close(lzxDst);
     }
 
-    if (sys) {
+    if (sys)
+    {
         mspack_memory_sys_destroy(sys);
     }
 
     return resultCode;
 }
 
-static int lzxDeltaApplyPatch(const Xex2DeltaPatch *deltaPatch, uint32_t patchLength, uint32_t windowSize, uint8_t *dstData)
+static int lzxDeltaApplyPatch(const Xex2DeltaPatch* deltaPatch, uint32_t patchLength, uint32_t windowSize, uint8_t* dstData)
 {
-    const void *patchEnd = (const uint8_t *)(deltaPatch) + patchLength;
-    const Xex2DeltaPatch *curPatch = deltaPatch;
+    const void* patchEnd = (const uint8_t*)(deltaPatch) + patchLength;
+    const Xex2DeltaPatch* curPatch = deltaPatch;
     while (patchEnd > curPatch)
     {
-        int patchSize = -4; 
+        int patchSize = -4;
         if (curPatch->compressedLength == 0 && curPatch->uncompressedLength == 0 && curPatch->newAddress == 0 && curPatch->oldAddress == 0)
         {
             // End of patch.
@@ -216,23 +222,23 @@ static int lzxDeltaApplyPatch(const Xex2DeltaPatch *deltaPatch, uint32_t patchLe
         }
 
         curPatch++;
-        curPatch = (const Xex2DeltaPatch *)((const uint8_t *)(curPatch) + patchSize);
+        curPatch = (const Xex2DeltaPatch*)((const uint8_t*)(curPatch) + patchSize);
     }
 
     return 0;
 }
 
-XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSize, const uint8_t* patchBytes, size_t patchBytesSize, std::vector<uint8_t> &outBytes, bool skipData)
+XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSize, const uint8_t* patchBytes, size_t patchBytesSize, std::vector<uint8_t>& outBytes, bool skipData)
 {
     // Validate headers.
     static const char Xex2Magic[] = "XEX2";
-    const Xex2Header *xexHeader = (const Xex2Header *)(xexBytes);
+    const Xex2Header* xexHeader = (const Xex2Header*)(xexBytes);
     if (memcmp(xexBytes, Xex2Magic, 4) != 0)
     {
         return Result::XexFileInvalid;
     }
 
-    const Xex2Header *patchHeader = (const Xex2Header *)(patchBytes);
+    const Xex2Header* patchHeader = (const Xex2Header*)(patchBytes);
     if (memcmp(patchBytes, Xex2Magic, 4) != 0)
     {
         return Result::PatchFileInvalid;
@@ -244,13 +250,13 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
     }
 
     // Validate patch.
-    const Xex2OptDeltaPatchDescriptor *patchDescriptor = (const Xex2OptDeltaPatchDescriptor *)(getOptHeaderPtr(patchBytes, XEX_HEADER_DELTA_PATCH_DESCRIPTOR));
+    const Xex2OptDeltaPatchDescriptor* patchDescriptor = (const Xex2OptDeltaPatchDescriptor*)(getOptHeaderPtr(patchBytes, XEX_HEADER_DELTA_PATCH_DESCRIPTOR));
     if (patchDescriptor == nullptr)
     {
         return Result::PatchFileInvalid;
     }
-    
-    const Xex2OptFileFormatInfo *patchFileFormatInfo = (const Xex2OptFileFormatInfo *)(getOptHeaderPtr(patchBytes, XEX_HEADER_FILE_FORMAT_INFO));
+
+    const Xex2OptFileFormatInfo* patchFileFormatInfo = (const Xex2OptFileFormatInfo*)(getOptHeaderPtr(patchBytes, XEX_HEADER_FILE_FORMAT_INFO));
     if (patchFileFormatInfo == nullptr)
     {
         return Result::PatchFileInvalid;
@@ -295,7 +301,7 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
     memset(outBytes.data(), 0, newXexHeaderSize);
     memcpy(outBytes.data(), xexBytes, headerTargetSize);
 
-    Xex2Header *newXexHeader = (Xex2Header *)(outBytes.data());
+    Xex2Header* newXexHeader = (Xex2Header*)(outBytes.data());
     if (patchDescriptor->deltaHeadersSourceOffset > 0)
     {
         memcpy(&outBytes[patchDescriptor->deltaHeadersTargetOffset], &outBytes[patchDescriptor->deltaHeadersSourceOffset], patchDescriptor->deltaHeadersSourceSize);
@@ -309,20 +315,20 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
 
     // Make the header the specified size by the patch.
     outBytes.resize(headerTargetSize);
-    newXexHeader = (Xex2Header *)(outBytes.data());
+    newXexHeader = (Xex2Header*)(outBytes.data());
 
     // Copy the rest of the data.
-    const Xex2SecurityInfo *newSecurityInfo = (const Xex2SecurityInfo *)(&outBytes[newXexHeader->securityOffset]);
+    const Xex2SecurityInfo* newSecurityInfo = (const Xex2SecurityInfo*)(&outBytes[newXexHeader->securityOffset]);
     outBytes.resize(outBytes.size() + newSecurityInfo->imageSize);
     memset(&outBytes[headerTargetSize], 0, outBytes.size() - headerTargetSize);
     memcpy(&outBytes[headerTargetSize], &xexBytes[xexHeader->headerSize], xexBytesSize - xexHeader->headerSize);
-    newXexHeader = (Xex2Header *)(outBytes.data());
-    newSecurityInfo = (const Xex2SecurityInfo *)(&outBytes[newXexHeader->securityOffset]);
-    
+    newXexHeader = (Xex2Header*)(outBytes.data());
+    newSecurityInfo = (const Xex2SecurityInfo*)(&outBytes[newXexHeader->securityOffset]);
+
     // Decrypt the keys and validate that the patch is compatible with the base file.
     constexpr uint32_t KeySize = 16;
-    const Xex2SecurityInfo *originalSecurityInfo = (const Xex2SecurityInfo *)(&xexBytes[xexHeader->securityOffset]);
-    const Xex2SecurityInfo *patchSecurityInfo = (const Xex2SecurityInfo *)(&patchBytes[patchHeader->securityOffset]);
+    const Xex2SecurityInfo* originalSecurityInfo = (const Xex2SecurityInfo*)(&xexBytes[xexHeader->securityOffset]);
+    const Xex2SecurityInfo* patchSecurityInfo = (const Xex2SecurityInfo*)(&patchBytes[patchHeader->securityOffset]);
     uint8_t decryptedOriginalKey[KeySize];
     uint8_t decryptedNewKey[KeySize];
     uint8_t decryptedPatchKey[KeySize];
@@ -356,9 +362,9 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
     {
         return Result::Success;
     }
-    
+
     // Decrypt base XEX if necessary.
-    const Xex2OptFileFormatInfo *fileFormatInfo = (const Xex2OptFileFormatInfo *)(getOptHeaderPtr(xexBytes, XEX_HEADER_FILE_FORMAT_INFO));
+    const Xex2OptFileFormatInfo* fileFormatInfo = (const Xex2OptFileFormatInfo*)(getOptHeaderPtr(xexBytes, XEX_HEADER_FILE_FORMAT_INFO));
     if (fileFormatInfo == nullptr)
     {
         return Result::XexFileInvalid;
@@ -377,11 +383,12 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
     // Decompress base XEX if necessary.
     if (fileFormatInfo->compressionType == XEX_COMPRESSION_BASIC)
     {
-        const Xex2FileBasicCompressionBlock *blocks = &((const Xex2FileBasicCompressionInfo*)(fileFormatInfo + 1))->firstBlock;
+        const Xex2FileBasicCompressionBlock* blocks = &((const Xex2FileBasicCompressionInfo*)(fileFormatInfo + 1))->firstBlock;
         int32_t numBlocks = (fileFormatInfo->infoSize / sizeof(Xex2FileBasicCompressionBlock)) - 1;
         int32_t baseCompressedSize = 0;
         int32_t baseImageSize = 0;
-        for (int32_t i = 0; i < numBlocks; i++) {
+        for (int32_t i = 0; i < numBlocks; i++)
+        {
             baseCompressedSize += blocks[i].dataSize;
             baseImageSize += blocks[i].dataSize + blocks[i].zeroSize;
         }
@@ -390,10 +397,10 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
         {
             return Result::XexFileInvalid;
         }
-        
+
         // Reverse iteration allows to perform this decompression in place.
-        uint8_t *srcDataCursor = outBytes.data() + headerTargetSize + baseCompressedSize;
-        uint8_t *outDataCursor = outBytes.data() + headerTargetSize + baseImageSize;
+        uint8_t* srcDataCursor = outBytes.data() + headerTargetSize + baseCompressedSize;
+        uint8_t* outDataCursor = outBytes.data() + headerTargetSize + baseImageSize;
         for (int32_t i = numBlocks - 1; i >= 0; i--)
         {
             outDataCursor -= blocks[i].zeroSize;
@@ -412,12 +419,12 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
         return Result::XexFileInvalid;
     }
 
-    Xex2OptFileFormatInfo *newFileFormatInfo = (Xex2OptFileFormatInfo *)(getOptHeaderPtr(outBytes.data(), XEX_HEADER_FILE_FORMAT_INFO));
+    Xex2OptFileFormatInfo* newFileFormatInfo = (Xex2OptFileFormatInfo*)(getOptHeaderPtr(outBytes.data(), XEX_HEADER_FILE_FORMAT_INFO));
     if (newFileFormatInfo == nullptr)
     {
         return Result::PatchFailed;
     }
-    
+
     // Update the header to indicate no encryption or compression is used.
     newFileFormatInfo->encryptionType = XEX_ENCRYPTION_NONE;
     newFileFormatInfo->compressionType = XEX_COMPRESSION_NONE;
@@ -437,8 +444,8 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
         return Result::PatchFileInvalid;
     }
 
-    const Xex2CompressedBlockInfo *currentBlock = &((const Xex2FileNormalCompressionInfo*)(patchFileFormatInfo + 1))->firstBlock;
-    uint8_t *outExe = &outBytes[newXexHeader->headerSize];
+    const Xex2CompressedBlockInfo* currentBlock = &((const Xex2FileNormalCompressionInfo*)(patchFileFormatInfo + 1))->firstBlock;
+    uint8_t* outExe = &outBytes[newXexHeader->headerSize];
     if (patchDescriptor->deltaImageSourceOffset > 0)
     {
         memcpy(&outExe[patchDescriptor->deltaImageTargetOffset], &outExe[patchDescriptor->deltaImageSourceOffset], patchDescriptor->deltaImageSourceSize);
@@ -447,10 +454,10 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
     static const uint32_t DigestSize = 20;
     uint8_t sha1Digest[DigestSize];
     sha1::SHA1 sha1Context;
-    uint8_t *patchDataCursor = patchData.data();
+    uint8_t* patchDataCursor = patchData.data();
     while (currentBlock->blockSize > 0)
     {
-        const Xex2CompressedBlockInfo *nextBlock = (const Xex2CompressedBlockInfo *)(patchDataCursor);
+        const Xex2CompressedBlockInfo* nextBlock = (const Xex2CompressedBlockInfo*)(patchDataCursor);
 
         // Hash and validate the block.
         sha1Context.reset();
@@ -465,7 +472,7 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
 
         // Apply the block's patch data.
         uint32_t blockDataSize = currentBlock->blockSize - 24;
-        if (lzxDeltaApplyPatch((const Xex2DeltaPatch *)(patchDataCursor), blockDataSize, ((const Xex2FileNormalCompressionInfo*)(patchFileFormatInfo + 1))->windowSize, outExe) != 0)
+        if (lzxDeltaApplyPatch((const Xex2DeltaPatch*)(patchDataCursor), blockDataSize, ((const Xex2FileNormalCompressionInfo*)(patchFileFormatInfo + 1))->windowSize, outExe) != 0)
         {
             return Result::PatchFailed;
         }
@@ -477,7 +484,7 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
     return Result::Success;
 }
 
-XexPatcher::Result XexPatcher::apply(const std::filesystem::path &baseXexPath, const std::filesystem::path &patchXexPath, const std::filesystem::path &newXexPath)
+XexPatcher::Result XexPatcher::apply(const std::filesystem::path& baseXexPath, const std::filesystem::path& patchXexPath, const std::filesystem::path& newXexPath)
 {
     MemoryMappedFile baseXexFile(baseXexPath);
     MemoryMappedFile patchFile(patchXexPath);
@@ -499,7 +506,7 @@ XexPatcher::Result XexPatcher::apply(const std::filesystem::path &baseXexPath, c
         return Result::FileOpenFailed;
     }
 
-    newXexFile.write((const char *)(newXexBytes.data()), newXexBytes.size());
+    newXexFile.write((const char*)(newXexBytes.data()), newXexBytes.size());
     newXexFile.close();
 
     if (newXexFile.bad())

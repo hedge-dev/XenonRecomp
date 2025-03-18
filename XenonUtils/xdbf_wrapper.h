@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include "xdbf.h"
+#include <vector>
 
 struct Achievement
 {
@@ -27,7 +27,7 @@ struct XDBFBlock
 
 class XDBFWrapper
 {
-public:
+  public:
     const uint8_t* pBuffer;
     size_t BufferSize;
 

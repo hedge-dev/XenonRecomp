@@ -11,12 +11,12 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    const char* path = 
-    #ifdef XENON_RECOMP_CONFIG_FILE_PATH
+    const char* path =
+#ifdef XENON_RECOMP_CONFIG_FILE_PATH
         XENON_RECOMP_CONFIG_FILE_PATH
-    #else
+#else
         argv[1]
-    #endif
+#endif
         ;
 
     if (std::filesystem::is_regular_file(path))

@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <cstdint>
+#include <string>
 
 enum SymbolType
 {
@@ -12,10 +12,10 @@ enum SymbolType
 
 struct Symbol
 {
-    mutable std::string name{};
-    size_t address{};
-    size_t size{};
-    mutable SymbolType type{};
+    mutable std::string name {};
+    size_t address {};
+    size_t size {};
+    mutable SymbolType type {};
 
     Symbol()
     {
