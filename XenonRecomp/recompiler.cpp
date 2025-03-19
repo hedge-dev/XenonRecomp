@@ -2000,7 +2000,7 @@ bool Recompiler::Recompile(
         switch (insn.operands[2])
         {
         case 0: // D3D color
-            if (insn.operands[3] != 1 || insn.operands[4] != 3)
+            if (insn.operands[3] != 1)
                 fmt::println("Unexpected D3D color pack instruction at {:X}", base);
 
             for (size_t i = 0; i < 4; i++)
@@ -2010,7 +2010,29 @@ bool Recompiler::Recompile(
                 println("\t{}.f32[{}] = {}.f32[{}] < 3.0f ? 3.0f : ({}.f32[{}] > {}.f32[{}] ? {}.f32[{}] : {}.f32[{}]);", vTemp(), i, v(insn.operands[1]), i, v(insn.operands[1]), i, vTemp(), i, vTemp(), i, v(insn.operands[1]), i);
                 println("\t{}.u32 {}= uint32_t({}.u8[{}]) << {};", temp(), i == 0 ? "" : "|", vTemp(), i * 4, indices[i] * 8);
             }
-            println("\t{}.u32[3] = {}.u32;", v(insn.operands[0]), temp());
+            println("\t{}.u32[{}] = {}.u32;", v(insn.operands[0]), insn.operands[4], temp());
+            break;
+
+        case 5: // float16_4
+            if (insn.operands[3] != 2 || insn.operands[4] != 2)
+                fmt::println("Unexpected float16_4 pack instruction at {:X}", base);
+
+            for (size_t i = 0; i < 4; i++)
+            {
+		// Strip sign from source
+		println("\t{}.u32 = ({}.u32[{}]&0x7FFFFFFF);", temp(), v(insn.operands[1]), i);
+		// If |source| is > 65504, clamp output to 0x7FFF, else save 8 exponent bits 
+                println("\t{}.u8[0] = ({}.f32 != {}.f32) || ({}.f32 > 65504.0f) ? 0xFF : (({}.u32[{}]&0x7f800000)>>23);", vTemp(), temp(), temp(), temp(), v(insn.operands[1]), i);
+		// If 8 exponent bits were saved, it can only be 0x8E at most
+		// If saved, save first 10 bits of mantissa
+		println("\t{}.u16[1] = {}.u8[0] != 0xFF ? (({}.u32[{}]&0x7FE000)>>13) : 0x0;", vTemp(), vTemp(), v(insn.operands[1]), i);
+		// If saved and > 127-15, exponent is converted from 8 to 5-bit by subtracting 0x70
+		// If saved but not > 127-15, clamp exponent at 0, add 0x400 to mantissa and shift right by (0x71-exponent)
+		// If right shift is greater than 31 bits, manually clamp mantissa to 0 or else the output of the shift will be wrong
+                println("\t{}.u16 = {}.u8[0] != 0xFF ? ({}.u8[0] > 0x70 ? ((({}.u8[0]-0x70)<<10)+{}.u16[1]) : (0x71-{}.u8[0] > 31 ? 0x0 : ((0x400+{}.u16[1])>>(0x71-{}.u8[0])))) : 0x7FFF;", temp(), vTemp(), vTemp(), vTemp(), vTemp(), vTemp(), vTemp(), vTemp());
+		// Add back original sign
+                println("\t{}.u16[{}] = (({}.u32[{}]&0x80000000)>>16)+{}.u16;", v(insn.operands[0]), i+4, v(insn.operands[1]), i, temp());
+            }
             break;
 
         default:
