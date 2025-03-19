@@ -2030,7 +2030,7 @@ bool Recompiler::Recompile(
 		// If saved but not > 127-15, clamp exponent at 0, add 0x400 to mantissa and shift right by (0x71-exponent)
 		// If right shift is greater than 31 bits, manually clamp mantissa to 0 or else the output of the shift will be wrong
                 println("\t{}.u16 = {}.u8[0] != 0xFF ? ({}.u8[0] > 0x70 ? ((({}.u8[0]-0x70)<<10)+{}.u16[1]) : (0x71-{}.u8[0] > 31 ? 0x0 : ((0x400+{}.u16[1])>>(0x71-{}.u8[0])))) : 0x7FFF;", temp(), vTemp(), vTemp(), vTemp(), vTemp(), vTemp(), vTemp(), vTemp());
-		        // Add back original sign
+		// Add back original sign
                 println("\t{}.u16[{}] = (({}.u32[{}]&0x80000000)>>16)+{}.u16;", v(insn.operands[0]), i+4, v(insn.operands[1]), i, temp());
             }
             break;
