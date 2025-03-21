@@ -378,8 +378,9 @@ bool Recompiler::Recompile(
             else if (address == config.setJmpAddress)
             {
                 println("\t{} = ctx;", env());
-                println("\t{}.s64 = setjmp(*reinterpret_cast<jmp_buf*>(base + {}.u32));", r(3), r(3));
-                println("\tif ({}.s64 != 0) ctx = {};", r(3), env());
+                println("\t{}.s64 = setjmp(*reinterpret_cast<jmp_buf*>(base + {}.u32));", temp(), r(3));
+                println("\tif ({}.s64 != 0) ctx = {};", temp(), env());
+                println("\t{} = {};", r(3), temp());
             }
             else
             {
