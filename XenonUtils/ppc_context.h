@@ -123,21 +123,18 @@ struct PPCFuncMapping
 
 extern PPCFuncMapping PPCFuncMappings[];
 
-struct PPCRegister
+union PPCRegister
 {
-    union
-    {
-        int8_t s8;
-        uint8_t u8;
-        int16_t s16;
-        uint16_t u16;
-        int32_t s32;
-        uint32_t u32;
-        int64_t s64;
-        uint64_t u64;
-        float f32;
-        double f64;
-    };
+    int8_t s8;
+    uint8_t u8;
+    int16_t s16;
+    uint16_t u16;
+    int32_t s32;
+    uint32_t u32;
+    int64_t s64;
+    uint64_t u64;
+    float f32;
+    double f64;
 };
 
 struct PPCXERRegister
@@ -194,21 +191,18 @@ struct PPCCRRegister
     }
 };
 
-struct alignas(0x10) PPCVRegister
+union alignas(0x10) PPCVRegister
 {
-    union
-    {
-        int8_t s8[16];
-        uint8_t u8[16];
-        int16_t s16[8];
-        uint16_t u16[8];
-        int32_t s32[4];
-        uint32_t u32[4];
-        int64_t s64[2];
-        uint64_t u64[2];
-        float f32[4];
-        double f64[2];
-    };
+    int8_t s8[16];
+    uint8_t u8[16];
+    int16_t s16[8];
+    uint16_t u16[8];
+    int32_t s32[4];
+    uint32_t u32[4];
+    int64_t s64[2];
+    uint64_t u64[2];
+    float f32[4];
+    double f64[2];
 };
 
 #define PPC_ROUND_NEAREST 0x00
@@ -270,7 +264,7 @@ struct PPCFPSCRRegister
     }
 };
 
-struct PPCContext
+struct alignas(0x40) PPCContext
 {
     PPCRegister r3;
 #ifndef PPC_CONFIG_NON_ARGUMENT_AS_LOCAL
