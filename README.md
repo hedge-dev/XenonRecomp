@@ -253,6 +253,32 @@ Compilers other than Clang have not been tested and are not recommended, includi
 
 On Windows, you can use the clang-cl toolset and open the project in Visual Studio's CMake integration.
 
+### Building on windows using MSYS2
+clone the repo with submodules
+```
+git clone --recurse-submodules https://github.com/hedge-dev/XenonRecomp.git
+```
+download msys2 from the official website and install it
+
+run msys2 ucrt64
+
+install clang and cmake on msys2
+```
+pacman -S mingw-w64-ucrt-x86_64-clang
+pacman -S mingw-w64-ucrt-x86_64-cmake
+```
+go into the folder
+
+set env vars temporarily so that cmake uses clang instead of gcc, this has to be done every time
+```
+export CC=clang
+export CXX=clang++
+```
+build the project
+```
+cmake -S . -B build -D CMAKE_BUILD_TYPE=Debug
+cmake --build build
+```
 ## Special Thanks
 
 This project could not have been possible without the [Xenia](https://github.com/xenia-project/xenia) emulator, as many parts of the CPU code conversion process has been implemented by heavily referencing its PPC code translator. The project also uses code from [Xenia Canary](https://github.com/xenia-canary/xenia-canary) to patch XEX binaries.
