@@ -16,6 +16,8 @@
 #include <span>
 #include <vector>
 
+extern int lzxDecompress(const void* lzxData, size_t lzxLength, void* dst, size_t dstLength, uint32_t windowSize, void* windowData, size_t windowDataLength);
+
 struct XexPatcher
 {
     enum class Result {
