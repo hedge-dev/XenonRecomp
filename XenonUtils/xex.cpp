@@ -210,8 +210,6 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
         image.entry_point = image.base + ntHeaders->OptionalHeader.AddressOfEntryPoint;
     }
 
-    image.entry_point = image.base + ntHeaders->OptionalHeader.AddressOfEntryPoint;
-
     const auto numSections = ntHeaders->FileHeader.NumberOfSections;
     const auto* sections = reinterpret_cast<const IMAGE_SECTION_HEADER*>(ntHeaders + 1);
 
