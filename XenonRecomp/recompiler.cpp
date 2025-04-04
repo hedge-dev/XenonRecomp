@@ -2014,7 +2014,7 @@ bool Recompiler::Recompile(
             break;
 
         case 5: // float16_4
-            if (insn.operands[3] != 2 || insn.operands[4] != 2)
+            if (insn.operands[3] != 2)
                 fmt::println("Unexpected float16_4 pack instruction at {:X}", base);
 
             for (size_t i = 0; i < 4; i++)
@@ -2029,9 +2029,9 @@ bool Recompiler::Recompile(
         		// If saved and > 127-15, exponent is converted from 8 to 5-bit by subtracting 0x70
         		// If saved but not > 127-15, clamp exponent at 0, add 0x400 to mantissa and shift right by (0x71-exponent)
         		// If right shift is greater than 31 bits, manually clamp mantissa to 0 or else the output of the shift will be wrong
-        		println("\t{0}.u16[{1}] = {2}.u8[0] != 0xFF ? ({2}.u8[0] > 0x70 ? ((({2}.u8[0]-0x70)<<10)+{3}.u16) : (0x71-{2}.u8[0] > 31 ? 0x0 : ((0x400+{3}.u16)>>(0x71-{2}.u8[0])))) : 0x7FFF;", v(insn.operands[0]), i+4, vTemp(), temp());
+        		println("\t{0}.u16[{1}] = {2}.u8[0] != 0xFF ? ({2}.u8[0] > 0x70 ? ((({2}.u8[0]-0x70)<<10)+{3}.u16) : (0x71-{2}.u8[0] > 31 ? 0x0 : ((0x400+{3}.u16)>>(0x71-{2}.u8[0])))) : 0x7FFF;", v(insn.operands[0]), i+(2*insn.operands[4]), vTemp(), temp());
         		// Add back original sign
-        		println("\t{}.u16[{}] |= (({}.u32[{}]&0x80000000)>>16);", v(insn.operands[0]), i+4, v(insn.operands[1]), i);
+        		println("\t{}.u16[{}] |= (({}.u32[{}]&0x80000000)>>16);", v(insn.operands[0]), i+(2*insn.operands[4]), v(insn.operands[1]), i);
             }
             break;
 
