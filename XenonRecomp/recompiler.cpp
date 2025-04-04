@@ -2014,7 +2014,7 @@ bool Recompiler::Recompile(
             break;
 
         case 5: // float16_4
-            if (insn.operands[3] != 2)
+            if (insn.operands[3] != 2 || insn.operands[4] > 2)
                 fmt::println("Unexpected float16_4 pack instruction at {:X}", base);
 
             for (size_t i = 0; i < 4; i++)
