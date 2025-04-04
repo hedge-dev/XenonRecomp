@@ -403,7 +403,71 @@ XexPatcher::Result XexPatcher::apply(const uint8_t* xexBytes, size_t xexBytesSiz
             memmove(outDataCursor, srcDataCursor, blocks[i].dataSize);
         }
     }
-    else if (fileFormatInfo->compressionType == XEX_COMPRESSION_NORMAL || fileFormatInfo->compressionType == XEX_COMPRESSION_DELTA)
+    else if (fileFormatInfo->compressionType == XEX_COMPRESSION_NORMAL)
+    {
+        const Xex2CompressedBlockInfo* blocks = &((const Xex2FileNormalCompressionInfo*)(fileFormatInfo + 1))->firstBlock;
+        const uint32_t exeLength = xexBytesSize - xexHeader->headerSize.get();
+        const uint8_t* exeBuffer = &outBytes[headerTargetSize];
+
+        uint8_t* compressBuffer = NULL;
+        const uint8_t* p = NULL;
+        uint8_t* d = NULL;
+        sha1::SHA1 s;
+
+        compressBuffer = (uint8_t*)calloc(1, exeLength);
+
+        p = exeBuffer;
+        d = compressBuffer;
+
+        int resultCode = 0;
+
+        uint8_t blockCalcedDigest[0x14];
+        while (blocks->blockSize) {
+            const uint8_t* pNext = p + blocks->blockSize;
+            const auto* nextBlock = (const Xex2CompressedBlockInfo*)p;
+
+            s.reset();
+            s.processBytes(p, blocks->blockSize);
+            s.finalize(blockCalcedDigest);
+
+            if (memcmp(blockCalcedDigest, blocks->blockHash, 0x14) != 0) {
+                resultCode = 2;
+                break;
+            }
+
+            p += 4;
+            p += 20;
+
+            while (true) {
+                const size_t chunkSize = (p[0] << 8) | p[1];
+                p += 2;
+                if (!chunkSize) {
+                    break;
+            }
+
+                memcpy(d, p, chunkSize);
+                p += chunkSize;
+                d += chunkSize;
+            }
+
+            p = pNext;
+            blocks = nextBlock;
+        }
+
+        if (!resultCode) 
+        {
+            uint32_t uncompressedSize = originalSecurityInfo->imageSize;
+            uint8_t* buffer = outBytes.data() + newXexHeaderSize;
+            resultCode = lzxDecompress(compressBuffer, d - compressBuffer, buffer, uncompressedSize, ((const Xex2FileNormalCompressionInfo*)(fileFormatInfo + 1))->windowSize, nullptr, 0);
+        }
+
+        if (compressBuffer) 
+            free((void*)compressBuffer);
+
+        if (resultCode)
+            return Result::PatchFailed;
+    }
+    else if (fileFormatInfo->compressionType == XEX_COMPRESSION_DELTA)
     {
         return Result::XexFileUnsupported;
     }

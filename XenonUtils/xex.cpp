@@ -5,6 +5,8 @@
 #include <vector>
 #include <unordered_map>
 #include <aes.hpp>
+#include <TinySHA1.hpp>
+#include <xex_patcher.h>
 
 #define STRINGIFY(X) #X
 #define XE_EXPORT(MODULE, ORDINAL, NAME, TYPE) { (ORDINAL), "__imp__" STRINGIFY(NAME) }
@@ -135,7 +137,7 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
     // Decompress image
     if (fileFormatInfo != nullptr)
     {
-        assert(fileFormatInfo->compressionType <= XEX_COMPRESSION_BASIC);
+        assert(fileFormatInfo->compressionType <= XEX_COMPRESSION_NORMAL);
 
         std::unique_ptr<uint8_t[]> decryptedData;
         const uint8_t* srcData = nullptr;
@@ -191,6 +193,79 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
                 memset(destData, 0, blocks[i].zeroSize);
                 destData += blocks[i].zeroSize;
             }
+        }
+        else if (fileFormatInfo->compressionType == XEX_COMPRESSION_NORMAL)
+        {
+            result = std::make_unique<uint8_t[]>(imageSize);
+            auto* destData = result.get();
+
+            const Xex2CompressedBlockInfo* blocks = &((const Xex2FileNormalCompressionInfo*)(fileFormatInfo + 1))->firstBlock;
+            const uint32_t headerSize = header->headerSize.get();
+
+            const uint32_t exeLength = dataSize - headerSize;
+            const uint8_t* exeBuffer = srcData;
+
+            uint8_t* compressBuffer = NULL;
+            const uint8_t* p = NULL;
+            uint8_t* d = NULL;
+            sha1::SHA1 s;
+
+            compressBuffer = (uint8_t*)calloc(1, exeLength);
+
+            p = exeBuffer;
+            d = compressBuffer;
+
+            int resultCode = 0;
+
+            uint8_t blockCalcedDigest[0x14];
+            while (blocks->blockSize) {
+                const uint8_t* pNext = p + blocks->blockSize;
+                const auto* nextBlock = (const Xex2CompressedBlockInfo*)p;
+
+                s.reset();
+                s.processBytes(p, blocks->blockSize);
+                s.finalize(blockCalcedDigest);
+
+                if (memcmp(blockCalcedDigest, blocks->blockHash, 0x14) != 0) {
+                    resultCode = 2;
+                    break;
+                }
+
+                p += 4;
+                p += 20;
+
+                while (true) {
+                    const size_t chunkSize = (p[0] << 8) | p[1];
+                    p += 2;
+                    if (!chunkSize) {
+                        break;
+                    }
+
+                    memcpy(d, p, chunkSize);
+                    p += chunkSize;
+                    d += chunkSize;
+                }
+
+                p = pNext;
+                blocks = nextBlock;
+            }
+
+            if (!resultCode)
+            {
+                uint32_t uncompressedSize = security->imageSize;
+                uint8_t* buffer = destData;
+
+                resultCode = lzxDecompress(compressBuffer, d - compressBuffer, buffer, uncompressedSize, ((const Xex2FileNormalCompressionInfo*)(fileFormatInfo + 1))->windowSize, nullptr, 0);
+            }
+
+            if (compressBuffer)
+                free((void*)compressBuffer);
+
+            if (resultCode)
+            {
+                return {};
+            }
+
         }
     }
 
