@@ -87,7 +87,7 @@ Additionally, mid-asm hooks can be inserted directly into the translated C++ cod
 XenonAnalyse, when used as a command-line application, allows an XEX file to be passed as an input argument to output a TOML file containing all the detected jump tables in the executable:
 
 ```
-XenonAnalyse [input XEX file path] [output jump table TOML file path]
+XenonAnalyse [input XEX file path] [name of toml output file]
 ```
 
 However, as explained in the earlier sections, due to variations between games, additional support may be needed to handle different patterns.
@@ -97,6 +97,7 @@ However, as explained in the earlier sections, due to variations between games, 
 ### XenonRecomp
 
 XenonRecomp accepts a TOML file with recompiler configurations and the path to the `ppc_context.h` file located in the XenonUtils directory:
+
 
 ```
 XenonRecomp [input TOML file path] [input PPC context header file path]
@@ -108,7 +109,7 @@ XenonRecomp [input TOML file path] [input PPC context header file path]
 
 ```toml
 [main]
-file_path = "../private/default.xex"
+file_path = "./private/default.xex"
 patch_file_path = "../private/default.xexp"
 patched_file_path = "../private/default_patched.xex"
 out_directory_path = "../ppc"
