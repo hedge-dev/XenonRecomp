@@ -205,20 +205,17 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
             const uint32_t exeLength = dataSize - headerSize;
             const uint8_t* exeBuffer = srcData;
 
-            uint8_t* compressBuffer = NULL;
+            auto compressBuffer = std::make_unique<uint8_t[]>(exeLength);
             const uint8_t* p = NULL;
             uint8_t* d = NULL;
             sha1::SHA1 s;
 
-            compressBuffer = (uint8_t*)calloc(1, exeLength);
-
             p = exeBuffer;
-            d = compressBuffer;
-
-            int resultCode = 0;
+            d = compressBuffer.get();
 
             uint8_t blockCalcedDigest[0x14];
-            while (blocks->blockSize) {
+            while (blocks->blockSize) 
+            {
                 const uint8_t* pNext = p + blocks->blockSize;
                 const auto* nextBlock = (const Xex2CompressedBlockInfo*)p;
 
@@ -226,20 +223,19 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
                 s.processBytes(p, blocks->blockSize);
                 s.finalize(blockCalcedDigest);
 
-                if (memcmp(blockCalcedDigest, blocks->blockHash, 0x14) != 0) {
-                    resultCode = 2;
-                    break;
-                }
+                if (memcmp(blockCalcedDigest, blocks->blockHash, 0x14) != 0)
+                    return {};
 
                 p += 4;
                 p += 20;
 
-                while (true) {
+                while (true) 
+                {
                     const size_t chunkSize = (p[0] << 8) | p[1];
                     p += 2;
-                    if (!chunkSize) {
+
+                    if (!chunkSize)
                         break;
-                    }
 
                     memcpy(d, p, chunkSize);
                     p += chunkSize;
@@ -250,22 +246,14 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
                 blocks = nextBlock;
             }
 
-            if (!resultCode)
-            {
-                uint32_t uncompressedSize = security->imageSize;
-                uint8_t* buffer = destData;
+            int resultCode = 0;
+            uint32_t uncompressedSize = security->imageSize;
+            uint8_t* buffer = destData;
 
-                resultCode = lzxDecompress(compressBuffer, d - compressBuffer, buffer, uncompressedSize, ((const Xex2FileNormalCompressionInfo*)(fileFormatInfo + 1))->windowSize, nullptr, 0);
-            }
-
-            if (compressBuffer)
-                free((void*)compressBuffer);
+            resultCode = lzxDecompress(compressBuffer.get(), d - compressBuffer.get(), buffer, uncompressedSize, ((const Xex2FileNormalCompressionInfo*)(fileFormatInfo + 1))->windowSize, nullptr, 0);
 
             if (resultCode)
-            {
                 return {};
-            }
-
         }
     }
 
