@@ -17,8 +17,9 @@ target_compile_definitions(XenonUtils
 )
 
 target_include_directories(XenonUtils 
-    PUBLIC 
+    PUBLIC
         .
+        "${THIRDPARTY_ROOT}/simde"
     PRIVATE
         "${THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
         "${THIRDPARTY_ROOT}/tiny-AES-c"
