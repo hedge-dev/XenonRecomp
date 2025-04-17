@@ -4,6 +4,8 @@ XenonRecomp is a tool that converts Xbox 360 executables into C++ code, which ca
 
 This project was heavily inspired by [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), a similar tool for N64 executables.
 
+**DISCLAIMER:** This project does not provide a runtime implementation. It only converts the game code to C++, which is not going to function correctly without a runtime backing it. **Having the game working is your responsibility.**
+
 ## Implementation Details
 
 ### Instructions
