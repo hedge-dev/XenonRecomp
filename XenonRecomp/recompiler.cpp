@@ -2468,6 +2468,36 @@ bool Recompiler::Recompile(
             println("\t{}.u8[{}] = {}.u8[{}] << ({}.u8[{}] & 0x7);", v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i);
         break;
 
+    case PPC_INST_VSLH:
+        // Vector shift left halfword
+        for (size_t i = 0; i < 8; i++)
+            println("\t{}.u16[{}] = {}.u16[{}] << ({}.u16[{}] & 0xF);", 
+                v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i);
+        break;
+
+    case PPC_INST_VSRAH:
+        // Vector shift right algebraic halfword
+        for (size_t i = 0; i < 8; i++)
+            println("\t{}.s16[{}] = {}.s16[{}] >> ({}.u16[{}] & 0xF);", 
+                v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i);
+        break;
+
+    case PPC_INST_VSRH:
+        // Vector shift right halfword
+        for (size_t i = 0; i < 8; i++)
+            println("\t{}.u16[{}] = {}.u16[{}] >> ({}.u16[{}] & 0xF);", 
+                v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i);
+        break;
+
+    case PPC_INST_VRLH:
+        // Vector rotate left halfword
+        for (size_t i = 0; i < 8; i++)
+            println("\t{}.u16[{}] = ({}.u16[{}] << ({}.u16[{}] & 0xF)) | "
+                "({}.u16[{}] >> (16 - ({}.u16[{}] & 0xF)));", 
+                v(insn.operands[0]), i, v(insn.operands[1]), i, v(insn.operands[2]), i,
+                v(insn.operands[1]), i, v(insn.operands[2]), i);
+        break;
+
     case PPC_INST_VSLDOI:
     case PPC_INST_VSLDOI128:
         println("\t_mm_store_si128((__m128i*){}.u8, _mm_alignr_epi8(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8), {}));", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]), 16 - insn.operands[3]);
@@ -2499,6 +2529,11 @@ bool Recompiler::Recompile(
 
     case PPC_INST_VSPLTISB:
         println("\t_mm_store_si128((__m128i*){}.u8, _mm_set1_epi8(char(0x{:X})));", v(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_VSPLTISH:
+        println("\t_mm_store_si128((__m128i*){}.s16, _mm_set1_epi16(short({})));", 
+            v(insn.operands[0]), int16_t(insn.operands[1]));
         break;
 
     case PPC_INST_VSPLTISW:
