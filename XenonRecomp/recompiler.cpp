@@ -1782,24 +1782,213 @@ bool Recompiler::Recompile(
         // no op
         break;
 
+    case PPC_INST_TDEQ:
+        println("\tif ({}.u64 == {}.u64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDEQI:
+        println("\tif ({}.u64 == {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TDGE:
+        println("\tif ({}.s64 >= {}.s64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDGEI:
+        println("\tif ({}.s64 >= {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDGT:
+        println("\tif ({}.s64 > {}.s64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDGTI:
+        println("\tif ({}.s64 > {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDLE:
+        println("\tif ({}.s64 <= {}.s64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDLEI:
+        println("\tif ({}.s64 <= {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDLGE:
+        println("\tif ({}.u64 >= {}.u64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
     case PPC_INST_TDLGEI:
-        // no op
+        println("\tif ({}.u64 >= {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TDLGT:
+        println("\tif ({}.u64 > {}.u64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDLGTI:
+        println("\tif ({}.u64 > {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TDLLE:
+        println("\tif ({}.u64 <= {}.u64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
         break;
 
     case PPC_INST_TDLLEI:
-        // no op
+        println("\tif ({}.u64 <= {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
         break;
 
+    case PPC_INST_TDLLT:
+        println("\tif ({}.u64 < {}.u64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDLLTI:
+        println("\tif ({}.u64 < {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TDLT:
+        println("\tif ({}.s64 < {}.s64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDLTI:
+        println("\tif ({}.s64 < {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDNE:
+        println("\tif ({}.u64 != {}.u64) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TDNEI:
+        println("\tif ({}.u64 != {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
     case PPC_INST_TWI:
-        // no op
+    {
+        // TO field specifies trap conditions:
+        // Bit 0 (16): Less than (signed)
+        // Bit 1 (8): Greater than (signed)  
+        // Bit 2 (4): Equal
+        // Bit 3 (2): Less than (unsigned)
+        // Bit 4 (1): Greater than (unsigned)
+        
+        bool first = true;
+        print("\tif (");
+        
+        if (insn.operands[0] & 16) {
+            print("{}.s32 < {}", r(insn.operands[1]), int32_t(insn.operands[2]));
+            first = false;
+        }
+        
+        if (insn.operands[0] & 8) {
+            if (!first) print(" || ");
+            print("{}.s32 > {}", r(insn.operands[1]), int32_t(insn.operands[2]));
+            first = false;
+        }
+        
+        if (insn.operands[0] & 4) {
+            if (!first) print(" || ");
+            print("{}.u32 == {}", r(insn.operands[1]), insn.operands[2]);
+            first = false;
+        }
+        
+        if (insn.operands[0] & 2) {
+            if (!first) print(" || ");
+            print("{}.u32 < {}", r(insn.operands[1]), insn.operands[2]);
+            first = false;
+        }
+        
+        if (insn.operands[0] & 1) {
+            if (!first) print(" || ");
+            print("{}.u32 > {}", r(insn.operands[1]), insn.operands[2]);
+            first = false;
+        }
+        
+        if (first) {
+            // TO = 0 means never trap
+            println("false) __builtin_debugtrap();");
+        } else {
+            println(") __builtin_debugtrap();");
+        }
+    }
+    break;
+
+    case PPC_INST_TWEQ:
+        println("\tif ({}.u32 == {}.u32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWEQI:
+        println("\tif ({}.u32 == {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TWGE:
+        println("\tif ({}.s32 >= {}.s32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWGEI:
+        println("\tif ({}.s32 >= {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWGT:
+        println("\tif ({}.s32 > {}.s32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWGTI:
+        println("\tif ({}.s32 > {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWLE:
+        println("\tif ({}.s32 <= {}.s32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWLEI:
+        println("\tif ({}.s32 <= {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWLGE:
+        println("\tif ({}.u32 >= {}.u32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
         break;
 
     case PPC_INST_TWLGEI:
-        // no op
+        println("\tif ({}.u32 >= {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TWLGT:
+        println("\tif ({}.u32 > {}.u32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWLGTI:
+        println("\tif ({}.u32 > {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TWLLE:
+        println("\tif ({}.u32 <= {}.u32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
         break;
 
     case PPC_INST_TWLLEI:
-        // no op
+        println("\tif ({}.u32 <= {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TWLLT:
+        println("\tif ({}.u32 < {}.u32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWLLTI:
+        println("\tif ({}.u32 < {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
+        break;
+
+    case PPC_INST_TWLT:
+        println("\tif ({}.s32 < {}.s32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWLTI:
+        println("\tif ({}.s32 < {}) __builtin_debugtrap();", r(insn.operands[0]), int32_t(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWNE:
+        println("\tif ({}.u32 != {}.u32) __builtin_debugtrap();", r(insn.operands[0]), r(insn.operands[1]));
+        break;
+
+    case PPC_INST_TWNEI:
+        println("\tif ({}.u32 != {}) __builtin_debugtrap();", r(insn.operands[0]), insn.operands[1]);
         break;
 
     case PPC_INST_VADDFP:
