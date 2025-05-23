@@ -658,4 +658,22 @@ inline __m128 _mm_vcmpbfp(__m128 a, __m128 b)
     return _mm_or_ps(xmm0, xmm1);
 }
 
+inline uint64_t __mulhu(uint64_t a, uint64_t b) {
+    // Get high/low 32-bit parts 
+    uint32_t a_lo = (uint32_t)a;
+    uint32_t a_hi = (uint32_t)(a >> 32);
+    uint32_t b_lo = (uint32_t)b;
+    uint32_t b_hi = (uint32_t)(b >> 32);
+
+    // Compute partial products
+    uint64_t lo_lo = (uint64_t)a_lo * b_lo;
+    uint64_t hi_lo = (uint64_t)a_hi * b_lo;
+    uint64_t lo_hi = (uint64_t)a_lo * b_hi;
+    uint64_t hi_hi = (uint64_t)a_hi * b_hi;
+
+    // Compute high 64 bits of result
+    uint64_t cross = (lo_lo >> 32) + (uint32_t)hi_lo + (uint32_t)lo_hi;
+    return hi_hi + (hi_lo >> 32) + (lo_hi >> 32) + (cross >> 32);
+}
+
 #endif
