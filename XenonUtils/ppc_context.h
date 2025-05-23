@@ -651,4 +651,11 @@ inline __m128i _mm_vsr(__m128i a, __m128i b)
     return _mm_castps_si128(_mm_insert_ps(_mm_castsi128_ps(_mm_srl_epi64(a, b)), _mm_castsi128_ps(_mm_srl_epi64(_mm_srli_si128(a, 4), b)), 0x10));
 }
 
+inline __m128 _mm_vcmpbfp(__m128 a, __m128 b) 
+{
+    __m128 xmm0 = _mm_and_ps(_mm_cmpgt_ps(a, b), _mm_castsi128_ps(_mm_set1_epi32(0x80000000)));
+    __m128 xmm1 = _mm_and_ps(_mm_cmplt_ps(a, _mm_sub_ps(_mm_setzero_ps(), b)), _mm_castsi128_ps(_mm_set1_epi32(0x40000000)));
+    return _mm_or_ps(xmm0, xmm1);
+}
+
 #endif

@@ -1876,7 +1876,11 @@ bool Recompiler::Recompile(
 
     case PPC_INST_VCMPBFP:
     case PPC_INST_VCMPBFP128:
-        println("\t__builtin_debugtrap();");
+        printSetFlushMode(true);
+        println("\t_mm_store_ps({}.f32, _mm_vcmpbfp(_mm_load_ps({}.f32), _mm_load_ps({}.f32)));", 
+            v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+        if (strchr(insn.opcode->name, '.'))
+            println("\t{}.setFromMask(_mm_load_ps({}.f32), 0xF);", cr(6), v(insn.operands[0]));
         break;
 
     case PPC_INST_VCMPEQFP:
