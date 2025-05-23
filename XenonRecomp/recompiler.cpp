@@ -567,6 +567,16 @@ bool Recompiler::Recompile(
         println("{};", static_cast<int32_t>(insn.operands[2] << 16));
         break;
 
+    case PPC_INST_ADDME:
+        println("\t{}.u64 = {}.u64 + {}.ca - 1;", temp(), r(insn.operands[1]), xer());
+        println("\t{}.ca = ({}.u64 > {}.u64) || ({}.u64 == {}.u64 && {}.ca);", xer(), 
+            r(insn.operands[1]), temp(), r(insn.operands[1]), temp(), xer());
+        println("\t{}.u64 = {}.u64;", r(insn.operands[0]), temp());
+        if (strchr(insn.opcode->name, '.'))
+            println("\t{}.compare<int32_t>({}.s32, 0, {});", 
+                cr(0), r(insn.operands[0]), xer());
+        break;
+
     case PPC_INST_ADDZE:
         println("\t{}.s64 = {}.s64 + {}.ca;", temp(), r(insn.operands[1]), xer());
         println("\t{}.ca = {}.u32 < {}.u32;", xer(), temp(), r(insn.operands[1]));
