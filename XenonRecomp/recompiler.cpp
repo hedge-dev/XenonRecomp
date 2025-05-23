@@ -2364,6 +2364,34 @@ bool Recompiler::Recompile(
         }
         break;
 
+    case PPC_INST_VPKUWUM:
+    case PPC_INST_VPKUWUM128:
+        println("\t_mm_store_si128((__m128i*){}.u32, _mm_load_si128((__m128i*){}.u32));", vTemp(), v(insn.operands[2]));
+        for (int i = 0; i < 4; i++) {
+            println("\t{}.u16[{}] = {}.u16[{}];", 
+                v(insn.operands[0]), i, vTemp(), i*2);
+        }
+        println("\t_mm_store_si128((__m128i*){}.u32, _mm_load_si128((__m128i*){}.u32));", vTemp(), v(insn.operands[1]));
+        for (int i = 0; i < 4; i++) {
+            println("\t{}.u16[{}] = {}.u16[{}];", 
+                v(insn.operands[0]), i + 4, vTemp(), i*2);
+        }
+        break;
+
+    case PPC_INST_VPKUWUS:
+    case PPC_INST_VPKUWUS128:
+        println("\t_mm_store_si128((__m128i*){}.u32, _mm_load_si128((__m128i*){}.u32));", vTemp(), v(insn.operands[2]));
+        for (int i = 0; i < 4; i++) {
+            println("\t{}.u16[{}] = {}.u32[{}] > 0xFFFF ? 0xFFFF : {}.u32[{}];",
+                v(insn.operands[0]), i, vTemp(), i, vTemp(), i);
+        }
+        println("\t_mm_store_si128((__m128i*){}.u32, _mm_load_si128((__m128i*){}.u32));", vTemp(), v(insn.operands[1]));
+        for (int i = 0; i < 4; i++) {
+            println("\t{}.u16[{}] = {}.u32[{}] > 0xFFFF ? 0xFFFF : {}.u32[{}];",
+                v(insn.operands[0]), i + 4, vTemp(), i, vTemp(), i);
+        }
+        break;
+
     case PPC_INST_VREFP:
     case PPC_INST_VREFP128:
         // TODO: see if we can use rcp safely
