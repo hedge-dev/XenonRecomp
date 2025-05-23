@@ -1770,6 +1770,14 @@ bool Recompiler::Recompile(
                 cr(0), r(insn.operands[0]), xer());
         break;
 
+    case PPC_INST_SUBFZE:
+        println("\t{}.u64 = ~{}.u64 + {}.ca;", temp(), r(insn.operands[1]), xer());
+        println("\t{}.ca = {}.u64 < {}.ca;", xer(), temp(), xer());
+        println("\t{}.u64 = {}.u64;", r(insn.operands[0]), temp());
+        if (strchr(insn.opcode->name, '.'))
+            println("\t{}.compare<int32_t>({}.s32, 0, {});", cr(0), r(insn.operands[0]), xer());
+        break;
+
     case PPC_INST_SYNC:
         // no op
         break;
