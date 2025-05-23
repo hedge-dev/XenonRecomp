@@ -1861,6 +1861,16 @@ bool Recompiler::Recompile(
             println("_mm_load_ps({}.f32)));", v(insn.operands[1]));
         break;
 
+    case PPC_INST_VCTUXS:
+    case PPC_INST_VCFPUXWS128:
+        printSetFlushMode(true);
+        print("\t_mm_store_si128((__m128i*){}.u32, _mm_vctuxs(", v(insn.operands[0]));
+        if (insn.operands[2] != 0)
+            println("_mm_mul_ps(_mm_load_ps({}.f32), _mm_set1_ps({}))));", v(insn.operands[1]), 1u << insn.operands[2]);
+        else
+            println("_mm_load_ps({}.f32)));", v(insn.operands[1]));
+        break;
+
     case PPC_INST_VCFSX:
     case PPC_INST_VCSXWFP128:
     {

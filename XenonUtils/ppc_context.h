@@ -676,4 +676,36 @@ inline uint64_t __mulhu(uint64_t a, uint64_t b) {
     return hi_hi + (hi_lo >> 32) + (lo_hi >> 32) + (cross >> 32);
 }
 
+inline __m128i _mm_vctuxs(__m128 src1)
+{
+    // Clamp negative to 0
+    __m128 clamped = _mm_max_ps(src1, _mm_setzero_ps());
+
+    // For values in [2^31, 2^32), subtract 2^31, convert, add 2^31 back
+    __m128i big_result = _mm_add_epi32(
+        _mm_cvttps_epi32(
+            _mm_sub_ps(clamped, _mm_castsi128_ps(_mm_set1_epi32(0x4F000000)))
+        ), 
+        _mm_set1_epi32(0x80000000)
+    ); 
+    
+    // Select based on range
+    __m128i result = _mm_blendv_epi8(
+        _mm_cvttps_epi32(clamped), 
+        big_result, 
+        _mm_castps_si128(
+            _mm_cmpge_ps(clamped, _mm_castsi128_ps(_mm_set1_epi32(0x4F000000)))
+        )
+    );
+    
+    // Saturate overflow and NaN to UINT_MAX
+    __m128 saturate_mask = _mm_or_ps(
+        _mm_cmpge_ps(
+            clamped, _mm_castsi128_ps(_mm_set1_epi32(0x4F800000))
+        ),
+        _mm_cmpunord_ps(src1, src1)
+    );
+    return _mm_blendv_epi8(result, _mm_set1_epi32(-1), _mm_castps_si128(saturate_mask));
+}
+
 #endif
