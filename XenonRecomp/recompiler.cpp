@@ -2457,6 +2457,11 @@ bool Recompiler::Recompile(
         println("\t_mm_store_si128((__m128i*){}.u8, _mm_or_si128(_mm_andnot_si128(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)), _mm_and_si128(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8))));", v(insn.operands[0]), v(insn.operands[3]), v(insn.operands[1]), v(insn.operands[3]), v(insn.operands[2]));
         break;
 
+    case PPC_INST_VSL:
+        println("\t_mm_store_si128((__m128i*){}.u8, _mm_vsl(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)));", 
+            v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
+        break;
+
     case PPC_INST_VSLB:
         // TODO: vectorize
         for (size_t i = 0; i < 16; i++)

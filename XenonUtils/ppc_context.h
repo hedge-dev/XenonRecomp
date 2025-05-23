@@ -708,4 +708,20 @@ inline __m128i _mm_vctuxs(__m128 src1)
     return _mm_blendv_epi8(result, _mm_set1_epi32(-1), _mm_castps_si128(saturate_mask));
 }
 
+inline __m128i _mm_vsl(__m128i a, __m128i b)
+{
+    // Extract shift count from last byte of b (accounting for endianness)
+    uint32_t shift = _mm_extract_epi8(b, 15) & 0x7;
+    
+    if (shift == 0) return a;
+    
+    // Shift left by bits
+    __m128i shifted = _mm_or_si128(
+        _mm_slli_epi64(a, shift),
+        _mm_srli_epi64(_mm_slli_si128(a, 8), 64 - shift)
+    );
+    
+    return shifted;
+}
+
 #endif
