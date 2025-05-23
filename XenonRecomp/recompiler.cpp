@@ -2378,6 +2378,13 @@ bool Recompiler::Recompile(
             v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1]));
         break;
 
+    case PPC_INST_VPKUHUS:
+    case PPC_INST_VPKUHUS128:
+        // Pack unsigned halfwords to unsigned bytes with saturation
+        println("\t_mm_store_si128((__m128i*){}.u8, _mm_packus_epi16(_mm_load_si128((__m128i*){}.u16), _mm_load_si128((__m128i*){}.u16)));", 
+            v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1]));
+        break;
+
     case PPC_INST_VPKUWUM:
     case PPC_INST_VPKUWUM128:
         println("\t_mm_store_si128((__m128i*){}.u32, _mm_load_si128((__m128i*){}.u32));", vTemp(), v(insn.operands[2]));
