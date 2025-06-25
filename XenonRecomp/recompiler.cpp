@@ -171,19 +171,7 @@ void Recompiler::Analyse()
     for (auto& [address, size] : config.functions)
     {
         functions.emplace_back(address, size);
-        // Check if there's a function alias for this address
-        auto aliasIt = config.functionAliases.find(address);
-        std::string symbolName;
-        if (aliasIt != config.functionAliases.end())
-        {
-            symbolName = aliasIt->second;
-        }
-        else
-        {
-            symbolName = fmt::format("sub_{:X}", address);
-        }
-
-        image.symbols.emplace(symbolName, address, size, Symbol_Function);
+        image.symbols.emplace(fmt::format("sub_{:X}", address), address, size, Symbol_Function);
     }
 
     auto& pdata = *image.Find(".pdata");
@@ -2796,13 +2784,7 @@ bool Recompiler::Recompile(const Function& fn)
 
     auto symbol = image.symbols.find(fn.base);
     std::string name;
-    auto aliasIt = config.functionAliases.find(fn.base);
-
-    if (aliasIt != config.functionAliases.end())
-    {
-        name = aliasIt->second;
-    }
-    else if (symbol != image.symbols.end())
+    if (symbol != image.symbols.end())
     {
         name = symbol->name;
     }

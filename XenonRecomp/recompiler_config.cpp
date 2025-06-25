@@ -58,17 +58,6 @@ void RecompilerConfig::Load(const std::string_view& configFilePath)
             }
         }
 
-        if (auto functionAliasesArray = main["function_aliases"].as_array())
-        {
-            for (auto& alias : *functionAliasesArray)
-            {
-                auto& aliasTable = *alias.as_table();
-                uint32_t address = *aliasTable["address"].value<uint32_t>();
-                std::string name = fmt::format("_gfn_{}", *aliasTable["name"].value<std::string>());
-                functionAliases.emplace(address, std::move(name));
-            }
-        }
-
         if (auto invalidArray = main["invalid_instructions"].as_array())
         {
             for (auto& instr : *invalidArray)
