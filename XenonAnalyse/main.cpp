@@ -105,7 +105,7 @@ void ScanTable(const uint32_t* code, size_t base, SwitchTable& table)
 {
     ppc_insn insn;
     uint32_t cr{ (uint32_t)-1 };
-    for (int i = 0; i < 32; i++)
+    for (int i = 0; i < 64; i++)
     {
         ppc::Disassemble(&code[-i], base - (4 * i), insn);
         if (insn.opcode == nullptr)
@@ -113,7 +113,11 @@ void ScanTable(const uint32_t* code, size_t base, SwitchTable& table)
             continue;
         }
 
-        if (cr == -1 && (insn.opcode->id == PPC_INST_BGT || insn.opcode->id == PPC_INST_BGTLR || insn.opcode->id == PPC_INST_BLE || insn.opcode->id == PPC_INST_BLELR))
+        // Handle conditional branches
+        if (cr == -1 && (insn.opcode->id == PPC_INST_BGT ||
+            insn.opcode->id == PPC_INST_BGTLR ||
+            insn.opcode->id == PPC_INST_BLE ||
+            insn.opcode->id == PPC_INST_BLELR))
         {
             cr = insn.operands[0];
             if (insn.opcode->operands[1] != 0)
@@ -121,15 +125,26 @@ void ScanTable(const uint32_t* code, size_t base, SwitchTable& table)
                 table.defaultLabel = insn.operands[1];
             }
         }
-        else if (cr != -1)
+        // Handle CMPLWI even if branch not found yet
+        else if (insn.opcode->id == PPC_INST_CMPLWI)
         {
-            if (insn.opcode->id == PPC_INST_CMPLWI && insn.operands[0] == cr)
+            // Only process if we haven't found labels yet
+            if (table.labels.empty())
             {
                 table.r = insn.operands[1];
                 table.labels.resize(insn.operands[2] + 1);
                 table.base = base;
-                break;
             }
+        }
+        // Handle CMPLWI after branch detection
+        else if (cr != -1 &&
+            insn.opcode->id == PPC_INST_CMPLWI &&
+            insn.operands[0] == cr)
+        {
+            table.r = insn.operands[1];
+            table.labels.resize(insn.operands[2] + 1);
+            table.base = base;
+            break;
         }
     }
 }
