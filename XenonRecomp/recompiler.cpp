@@ -825,6 +825,7 @@ bool Recompiler::Recompile(
         // no op
         break;
 
+    case PPC_INST_DCBST:
     case PPC_INST_DCBTST:
         // no op
         break;
