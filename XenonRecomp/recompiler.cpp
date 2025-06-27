@@ -1020,6 +1020,12 @@ bool Recompiler::Recompile(
         println("\t{}.f64 = {}.f64 >= 0.0 ? {}.f64 : {}.f64;", f(insn.operands[0]), f(insn.operands[1]), f(insn.operands[2]), f(insn.operands[3]));
         break;
 
+    case PPC_INST_FRSQRTE:
+        // TODO(crack): I sure hope the c++ optimizer can optimize this. Fixme with some simd magic later
+        printSetFlushMode(false);
+        println("\t{}.f64 = double(1.0f / sqrtf(float({}.f64)));", f(insn.operands[0]), f(insn.operands[1]));
+        break;
+
     case PPC_INST_FSQRT:
         printSetFlushMode(false);
         println("\t{}.f64 = sqrt({}.f64);", f(insn.operands[0]), f(insn.operands[1]));
