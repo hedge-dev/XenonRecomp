@@ -800,6 +800,13 @@ bool Recompiler::Recompile(
         // no op
         break;
 
+
+    case PPC_INST_EQV:
+        println("\t{}.u64 = ~({}.u64 ^ {}.u64);", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+        if (strchr(insn.opcode->name, '.'))
+            println("\t{}.compare<int64_t>({}.s64, 0, {});", cr(0), r(insn.operands[0]), xer()); // Check if CR0 comparison uses s64
+        break;
+
     case PPC_INST_DCBF:
         // no op
         break;
@@ -807,6 +814,10 @@ bool Recompiler::Recompile(
     case PPC_INST_DCBT:
         // no op
         break;
+
+    case PPC_INST_DCBST:
+        // no op
+        break;    
 
     case PPC_INST_DCBTST:
         // no op
@@ -989,6 +1000,19 @@ bool Recompiler::Recompile(
         printSetFlushMode(false);
         println("\t{}.f64 = double(float({}.f64));", f(insn.operands[0]), f(insn.operands[1]));
         break;
+
+    case PPC_INST_FRSQRTE:
+        printSetFlushMode(false); // Ensure standard FPU mode
+        // Uses SSE reciprocal square root estimate instruction _mm_rsqrt_ss
+        println("\t{{");
+        println("\t\t__m128 val_pd = _mm_load_sd(&{}.f64);", f(insn.operands[1]));       // Load double
+        println("\t\t__m128 val_ss = _mm_cvtpd_ps(val_pd);");     // Convert to single
+        println("\t\t__m128 rsqrt_est_ss = _mm_rsqrt_ss(val_ss);"); // Estimate (single)
+        println("\t\t__m128 result_pd = _mm_cvtps_pd(rsqrt_est_ss);"); // Convert back to double
+        println("\t\t_mm_store_sd(&{}.f64, result_pd);", f(insn.operands[0]));      // Store result
+        println("\t}}");
+        // FRSQRTE does not typically set FPSCR bits, but check PDF if needed.
+        break;    
 
     case PPC_INST_FSEL:
         printSetFlushMode(false);
@@ -1315,8 +1339,26 @@ bool Recompiler::Recompile(
         println("\t{}.s64 = {}.s64 * {}.s64;", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
         break;
 
+    case PPC_INST_MULHD:
+        println("\t{}.s64 = ((__int128_t){}.s64 * (__int128_t){}.s64) >> 64;", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+        if (strchr(insn.opcode->name, '.'))
+            println("\t{}.compare<int64_t>({}.s64, 0, {});", cr(0), r(insn.operands[0]), xer()); // Check if CR0 comparison uses s64
+        break;
+        
+    case PPC_INST_MULHDU:
+        println("\t{}.u64 = ((__uint128_t){}.u64 * (__uint128_t){}.u64) >> 64;", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+        if (strchr(insn.opcode->name, '.'))
+            println("\t{}.compare<int64_t>({}.s64, 0, {});", cr(0), r(insn.operands[0]), xer()); // Check if CR0 comparison uses s64 or u64
+        break;   
+
     case PPC_INST_MULLI:
         println("\t{}.s64 = {}.s64 * {};", r(insn.operands[0]), r(insn.operands[1]), int32_t(insn.operands[2]));
+        break;
+
+    case PPC_INST_MULLHWU: // Verify this ID exists
+        println("\t{}.u64 = (uint32_t)(({}.u64 & 0xFFFF) * ({}.u64 & 0xFFFF));", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
+        if (strchr(insn.opcode->name, '.'))
+            println("\t{}.compare<int32_t>({}.s32, 0, {});", cr(0), r(insn.operands[0]), xer());
         break;
 
     case PPC_INST_MULLW:
@@ -1338,6 +1380,19 @@ bool Recompiler::Recompile(
     case PPC_INST_NOP:
         // no op
         break;
+
+    case PPC_INST_VNOR128:
+        printSetFlushMode(true);
+        println("\t{{");
+        println("\t\t__m128i vra = _mm_load_si128((__m128i*){}.u8);", v(insn.operands[1])); // Load VRA
+        println("\t\t__m128i vrb = _mm_load_si128((__m128i*){}.u8);", v(insn.operands[2])); // Load VRB
+        println("\t\t__m128i or_result = _mm_or_si128(vra, vrb);"); // VRA | VRB
+        // Invert bits using XOR with all ones (~(A|B))
+        println("\t\t__m128i all_ones = _mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128());");
+        println("\t\t__m128i nor_result = _mm_xor_si128(or_result, all_ones);");
+        println("\t\t_mm_store_si128((__m128i*){}.u8, nor_result);", v(insn.operands[0])); // Store VRT
+        println("\t}}");
+        break;    
 
     case PPC_INST_NOR:
         println("\t{}.u64 = ~({}.u64 | {}.u64);", r(insn.operands[0]), r(insn.operands[1]), r(insn.operands[2]));
@@ -1537,6 +1592,14 @@ bool Recompiler::Recompile(
         if (insn.operands[1] != 0)
             print("{}.u32 + ", r(insn.operands[1]));
         println("{}.u32, {}.u64);", r(insn.operands[2]), f(insn.operands[0]));
+        break;
+
+    case PPC_INST_STFSU:
+        printSetFlushMode(false);
+        println("\t{}.f32 = float({}.f64);", temp(), f(insn.operands[0])); // Convert FRS (double) to float in temp
+        println("\t{} = {} + {}.u32;", ea(), int32_t(insn.operands[1]), r(insn.operands[2])); // Calculate EA = RA + D
+        println("\tPPC_STORE_U32({}, {}.u32);", ea(), temp()); // Store float bits
+        println("\t{}.u32 = {};", r(insn.operands[2]), ea()); // Update RA with EA
         break;
 
     case PPC_INST_STFIWX:
@@ -1769,6 +1832,12 @@ bool Recompiler::Recompile(
         println("\t_mm_store_si128((__m128i*){}.u8, _mm_and_si128(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)));", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
         break;
 
+    case PPC_INST_VANDC:
+        printSetFlushMode(true);
+        // Computes VRA & ~VRB using _mm_andnot_si128(VRB, VRA)
+        println("\t_mm_store_si128((__m128i*){}.u8, _mm_andnot_si128(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)));", v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1])); // VRT, VRB, VRA
+        break;
+
     case PPC_INST_VANDC128:
         println("\t_mm_store_si128((__m128i*){}.u8, _mm_andnot_si128(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)));", v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1]));
         break;
@@ -1794,6 +1863,22 @@ bool Recompiler::Recompile(
         else
             println("_mm_load_ps({}.f32)));", v(insn.operands[1]));
         break;
+
+    case PPC_INST_VCFPUXWS128: // Or PPC_INST_VCTUXS if that's the ID used
+        printSetFlushMode(true);
+        println("\t{{");
+        println("\t\t__m128 vrbf = _mm_load_ps({}.f32);", v(insn.operands[1])); // Load VRB floats
+        if (insn.operands[2] != 0) { // Check UIMM (operand 2)
+            // Scale VRB by 2^UIMM before converting
+            println("\t\tfloat scale = ldexpf(1.0f, {});", (int32_t)insn.operands[2]); // Calculate 2^UIMM
+            println("\t\t__m128 scale_ps = _mm_set1_ps(scale);");
+            println("\t\tvrbf = _mm_mul_ps(vrbf, scale_ps);");
+        }
+        // Use the helper function from ppc_context.h which handles conversion and saturation
+        println("\t\t__m128i result = _mm_vctuxs(vrbf);");
+        println("\t\t_mm_store_si128((__m128i*){}.u32, result);", v(insn.operands[0])); // Store VRT
+        println("\t}}");
+        break;  
 
     case PPC_INST_VCFSX:
     case PPC_INST_VCSXWFP128:
@@ -1917,6 +2002,28 @@ bool Recompiler::Recompile(
         printSetFlushMode(true);
         println("\t_mm_store_ps({}.f32, _mm_min_ps(_mm_load_ps({}.f32), _mm_load_ps({}.f32)));", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]));
         break;
+
+    case PPC_INST_VPKSWSS:
+    case PPC_INST_VPKSWSS128: // Or PPC_INST_VPKSWSS
+        printSetFlushMode(true);
+        println("\t_mm_store_si128((__m128i*){}.s16, _mm_packs_epi32(_mm_load_si128((__m128i*){}.s32), _mm_load_si128((__m128i*){}.s32)));", v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1])); // VRT, VRA, VRB
+        break;
+
+    case PPC_INST_VPKUWUS128:
+        printSetFlushMode(true);
+        println("\t{{");
+        println("\t\t__m128i max_val = _mm_set1_epi32(0xFFFF);"); // Max value for unsigned 16-bit
+        println("\t\t__m128i vra = _mm_load_si128((__m128i*){}.u32);", v(insn.operands[2])); // Load VRA (operand 2)
+        println("\t\t__m128i vrb = _mm_load_si128((__m128i*){}.u32);", v(insn.operands[1])); // Load VRB (operand 1)
+        // Saturate VRA words (unsigned) [0, 65535]
+        println("\t\tvra = _mm_min_epu32(vra, max_val);");
+        // Saturate VRB words (unsigned) [0, 65535]
+        println("\t\tvrb = _mm_min_epu32(vrb, max_val);");
+        // Pack clamped words. _mm_packs_epi32 works correctly here because inputs are pre-clamped.
+        println("\t\t__m128i result = _mm_packs_epi32(vra, vrb);");
+        println("\t\t_mm_store_si128((__m128i*){}.u16, result);", v(insn.operands[0])); // Store VRT (operand 0)
+        println("\t}}");
+        break;   
 
     case PPC_INST_VMRGHB:
         println("\t_mm_store_si128((__m128i*){}.u8, _mm_unpackhi_epi8(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)));", v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1]));
@@ -2047,6 +2154,14 @@ bool Recompiler::Recompile(
         println("\t_mm_store_si128((__m128i*){}.u8, _mm_packus_epi16(_mm_load_si128((__m128i*){}.s16), _mm_load_si128((__m128i*){}.s16)));", v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1]));
         break;
 
+    case PPC_INST_VPKUHUS:
+    case PPC_INST_VPKUHUS128: // Or PPC_INST_VPKUHUS
+        printSetFlushMode(true);
+        // _mm_packus_epi16 performs unsigned saturation from signed 16-bit to unsigned 8-bit.
+        // This matches VPKUHUS behavior.
+        println("\t_mm_store_si128((__m128i*){}.u8, _mm_packus_epi16(_mm_load_si128((__m128i*){}.s16), _mm_load_si128((__m128i*){}.s16)));", v(insn.operands[0]), v(insn.operands[2]), v(insn.operands[1])); // VRT, VRA, VRB
+        break;  
+
     case PPC_INST_VREFP:
     case PPC_INST_VREFP128:
         // TODO: see if we can use rcp safely
@@ -2088,7 +2203,11 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_VSEL:
-        println("\t_mm_store_si128((__m128i*){}.u8, _mm_or_si128(_mm_andnot_si128(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)), _mm_and_si128(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8))));", v(insn.operands[0]), v(insn.operands[3]), v(insn.operands[1]), v(insn.operands[3]), v(insn.operands[2]));
+    case PPC_INST_VSEL128: // Or PPC_INST_VSEL
+        printSetFlushMode(true);
+        // VRT = (VRC sign bit set) ? VRB : VRA;
+        // _mm_blendv_epi8 uses the sign bit of the mask (VRC) to select bytes from VRB (if sign=1) or VRA (if sign=0)
+        println("\t_mm_store_si128((__m128i*){}.u8, _mm_blendv_epi8(_mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8), _mm_load_si128((__m128i*){}.u8)));", v(insn.operands[0]), v(insn.operands[1]), v(insn.operands[2]), v(insn.operands[3])); // VRT, VRA, VRB, VRC
         break;
 
     case PPC_INST_VSLB:

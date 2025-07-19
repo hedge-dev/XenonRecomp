@@ -2,6 +2,11 @@ cmake_minimum_required (VERSION 3.8)
 
 project("XenonRecomp")
 
+# Find required packages
+find_package(fmt REQUIRED)
+find_package(tomlplusplus REQUIRED)
+find_package(xxHash REQUIRED)
+
 add_executable(XenonRecomp 
     "main.cpp" 
     "recompiler.cpp"
