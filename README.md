@@ -190,6 +190,12 @@ functions = [
 
 You can define function boundaries explicitly using the `functions` property if XenonAnalyse fails to analyze them correctly, for example, with functions containing jump tables.
 
+You can automatically generate these using the FunctionParser.py script. You will need to create a HTML of your decompiled XEX with IDA using `File -> Produce File -> Create HTML File...` and save the terminal output from running XenonRecomp by appending `> [output log file path]` to the command.
+
+```
+python3 FunctionParser.py [input IDA HTML file path] [input XenonRecomp log file path] [output function list file path]
+```
+
 #### Invalid Instruction Skips
 
 ```toml
