@@ -1241,7 +1241,7 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_MFFS:
-        println("\t{}.u64 = ctx.fpscr.loadFromHost();", r(insn.operands[0]));
+        println("\t{}.u64 = ctx.fpscr.loadFromHost();", f(insn.operands[0]));
         break;
 
     case PPC_INST_MFLR:
