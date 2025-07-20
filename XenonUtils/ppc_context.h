@@ -645,10 +645,91 @@ inline __m128i _mm_vctsxs(__m128 src1)
     return _mm_andnot_si128(_mm_castps_si128(xmm2), _mm_castps_si128(dest));
 }
 
+inline __m128i _mm_vctuxs(__m128 src1)
+{
+    __m128 xmm0 = _mm_max_ps(src1, _mm_set1_epi32(0));
+    __m128 xmm1 = _mm_cmpge_ps(xmm0, _mm_set1_ps((float)0x80000000));
+    __m128 xmm2 = _mm_sub_ps(xmm0, _mm_set1_ps((float)0x80000000));
+    xmm0 = _mm_blendv_ps(xmm0, xmm2, xmm1);
+    __m128i dest = _mm_cvttps_epi32(xmm0);
+    xmm0 = _mm_cmpeq_epi32(dest, _mm_set1_epi32(INT_MIN));
+    xmm1 = _mm_and_si128(xmm1, _mm_set1_epi32(INT_MIN));
+    dest = _mm_add_epi32(dest, xmm1);
+    return _mm_or_si128(dest, xmm0);
+}
+
 inline __m128i _mm_vsr(__m128i a, __m128i b)
 {
     b = _mm_srli_epi64(_mm_slli_epi64(b, 61), 61);
     return _mm_castps_si128(_mm_insert_ps(_mm_castsi128_ps(_mm_srl_epi64(a, b)), _mm_castsi128_ps(_mm_srl_epi64(_mm_srli_si128(a, 4), b)), 0x10));
 }
+
+inline uint64_t _rotl64(uint64_t value, int shift) {
+    shift &= 63; // Normalize shift to 0-63
+    return (value << shift) | (value >> (64 - shift));
+}
+
+inline uint32_t __lzcnt(uint32_t value) {
+    if (value == 0) return 32;
+    uint32_t count = 0;
+    while ((value & 0x80000000) == 0) {
+        count++;
+        value <<= 1;
+    }
+    return count;
+}
+
+#ifdef _WIN32
+    #pragma intrinsic(_InterlockedCompareExchange)
+    #define PPC_InterlockedCompareExchange _InterlockedCompareExchange
+#else
+    // Fallback for GCC/Clang
+    inline long PPC_InterlockedCompareExchange(long volatile* Destination, long Exchange, long Comparand) {
+        int32_t expected = Comparand;
+        bool success = __atomic_compare_exchange_n(
+            reinterpret_cast<volatile int32_t*>(Destination),  // Preserve volatile
+            &expected,
+            Exchange,
+            false,
+            __ATOMIC_SEQ_CST,
+            __ATOMIC_SEQ_CST
+        );
+        return success ? Comparand : expected;
+    }
+#endif
+
+#ifdef _WIN32
+    #pragma intrinsic(_InterlockedCompareExchange64)
+    #define PPC_InterlockedCompareExchange64 _InterlockedCompareExchange64
+#else
+    // Fallback for GCC/Clang
+    inline int64_t PPC_InterlockedCompareExchange64(int64_t volatile* Destination, int64_t Exchange, int64_t Comparand) {
+        int64_t expected = Comparand;
+        bool success = __atomic_compare_exchange_n(
+            reinterpret_cast<volatile int64_t*>(Destination),  // Preserve volatile
+            &expected,
+            Exchange,
+            false,
+            __ATOMIC_SEQ_CST,
+            __ATOMIC_SEQ_CST
+        );
+        return success ? Comparand : expected;
+    }
+#endif
+
+
+#ifndef __debugbreak
+#ifdef _WIN32
+#pragma intrinsic(__debugbreak)
+#define __debugbreak __debugbreak
+#else
+// GCC/Clang/Linux fallback
+#ifdef __x86_64__
+#define __debugbreak() asm volatile("int $0x3")
+#else
+#define __debugbreak() raise(SIGTRAP)
+#endif
+#endif
+#endif
 
 #endif

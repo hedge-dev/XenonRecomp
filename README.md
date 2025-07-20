@@ -255,6 +255,12 @@ Compilers other than Clang have not been tested and are not recommended, includi
 
 On Windows, you can use the clang-cl toolset and open the project in Visual Studio's CMake integration.
 
+On Linux, you can build via the following commands after creating and entering the `build` directory:
+```
+cmake -S .. -B . -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang -DCMAKE_EXE_LINKER_FLAGS="-lstdc++"
+cmake --build . --config Release
+```
+
 ## Special Thanks
 
 This project could not have been possible without the [Xenia](https://github.com/xenia-project/xenia) emulator, as many parts of the CPU code conversion process has been implemented by heavily referencing its PPC code translator. The project also uses code from [Xenia Canary](https://github.com/xenia-canary/xenia-canary) to patch XEX binaries.
