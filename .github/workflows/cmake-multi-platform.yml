@@ -1,0 +1,122 @@
+name: Build stuff
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Debug]
+        include:
+          - os: windows-latest
+            c_compiler: clang-cl
+            cpp_compiler: clang-cl
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Ninja (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y ninja-build
+      shell: bash
+
+    - name: Install Ninja (Windows)
+      if: runner.os == 'Windows'
+      run: choco install ninja
+      shell: powershell
+
+    - name: Configure CMake (Linux)
+      if: runner.os == 'Linux'
+      run: >
+        cmake
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -G Ninja
+        -S .
+      shell: bash
+
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      run: >
+        cmake
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -G Ninja
+        -S .
+      shell: powershell
+
+  
+    - name: Build
+      run: ninja
+
+
+
+
+    - name: Package Artifacts (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        mkdir -p artifacts
+        cp XenonRecomp/XenonRecomp artifacts/
+        cp XenonAnalyse/XenonAnalyse artifacts/
+      shell: bash
+
+    - name: Package Artifacts (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        New-Item -ItemType Directory -Path artifacts
+        Copy-Item -Path XenonRecomp\XenonRecomp.exe -Destination artifacts\
+        Copy-Item -Path XenonAnalyse\XenonAnalyse.exe -Destination artifacts\
+      shell: powershell
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: XenonBinaries-${{ matrix.os }}
+        path: artifacts/*
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Linux Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: XenonBinaries-ubuntu-latest
+        path: artifacts
+
+    - name: Download Windows Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: XenonBinaries-windows-latest
+        path: artifacts
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          **Automated release for** ${{ github.ref_name }}
+
+          - Includes builds for **Linux** and **Windows**.
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/XenonBinaries-ubuntu-latest.zip
+          artifacts/XenonBinaries-windows-latest.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
