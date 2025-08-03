@@ -141,7 +141,7 @@ inline bool bitScanForward(uint64_t v, uint32_t *outFirstSetIndex)
 }
 #endif
 
-static int lzxDecompress(const void *lzxData, size_t lzxLength, void *dst, size_t dstLength, uint32_t windowSize, void *windowData, size_t windowDataLength)
+int lzxDecompress(const void *lzxData, size_t lzxLength, void *dst, size_t dstLength, uint32_t windowSize, void *windowData, size_t windowDataLength)
 {
     int resultCode = 1;
     uint32_t windowBits;
