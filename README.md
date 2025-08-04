@@ -1,6 +1,6 @@
 # XenonRecomp
 
-XenonRecomp is a tool that converts Xbox 360 executables into C++ code, which can then be recompiled for any platform. Currently, it only supports x86 platforms due to the use of x86 intrinsics.
+XenonRecomp is a tool that converts Xbox 360 executables into C++ code, which can then be recompiled for any platform.
 
 This project was heavily inspired by [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), a similar tool for N64 executables.
 
@@ -20,7 +20,7 @@ Vector registers' endianness handling is more complicated. Instead of swapping i
 
 The FPU expects denormalized numbers to remain unmodified, while VMX instructions always flush them. This is managed by storing the current floating-point state in the CPU state struct and enabling or disabling denormal flushing as necessary before executing each instruction.
 
-Most VMX instructions are implemented using x86 intrinsics. Luckily, the number of AVX intrinsics used is relatively low, so adding support for other architectures using libraries like [SIMD Everywhere](https://github.com/simd-everywhere/simde) might be possible.
+Most VMX instructions are implemented using x86 intrinsics. Support for ARM64 is implemented using [SIMD Everywhere](https://github.com/simd-everywhere/simde).
 
 ### MMIO
 
