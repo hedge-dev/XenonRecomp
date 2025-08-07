@@ -115,16 +115,16 @@ void RecompilerConfig::Load(const std::string_view& configFilePath)
             midAsmHook.jumpAddressOnTrue = table["jump_address_on_true"].value_or(0u);
             midAsmHook.jumpAddressOnFalse = table["jump_address_on_false"].value_or(0u);
 
-            if ((midAsmHook.ret && midAsmHook.jumpAddress != NULL) ||
-                (midAsmHook.returnOnTrue && midAsmHook.jumpAddressOnTrue != NULL) ||
-                (midAsmHook.returnOnFalse && midAsmHook.jumpAddressOnFalse != NULL))
+            if ((midAsmHook.ret && midAsmHook.jumpAddress != 0) ||
+                (midAsmHook.returnOnTrue && midAsmHook.jumpAddressOnTrue != 0) ||
+                (midAsmHook.returnOnFalse && midAsmHook.jumpAddressOnFalse != 0))
             {
                 fmt::println("{}: can't return and jump at the same time", midAsmHook.name);
             }
 
-            if ((midAsmHook.ret || midAsmHook.jumpAddress != NULL) &&
-                (midAsmHook.returnOnFalse != NULL || midAsmHook.returnOnTrue != NULL ||
-                    midAsmHook.jumpAddressOnFalse != NULL || midAsmHook.jumpAddressOnTrue != NULL))
+            if ((midAsmHook.ret || midAsmHook.jumpAddress != 0) &&
+                (midAsmHook.returnOnFalse != 0 || midAsmHook.returnOnTrue != 0 ||
+                    midAsmHook.jumpAddressOnFalse != 0 || midAsmHook.jumpAddressOnTrue != 0))
             {
                 fmt::println("{}: can't mix direct and conditional return/jump", midAsmHook.name);
             }

@@ -11,6 +11,9 @@ struct Image
     size_t base{};
     uint32_t size{};
 
+    uint32_t resource_offset{};
+    uint32_t resource_size{};
+
     size_t entry_point{};
     std::set<Section, SectionComparer> sections{};
     SymbolTable symbols{};

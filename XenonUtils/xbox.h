@@ -93,6 +93,32 @@ struct be
         set(v);
         return *this;
     }
+
+    be& operator++ ()
+    {
+        set(get() + 1);
+        return *this;
+    }
+
+    be operator++ (int)
+    {
+        be old = *this;
+        set(get() + 1);
+        return old;
+    }
+
+    be& operator-- ()
+    {
+        set(get() - 1);
+        return *this;
+    }
+
+    be operator-- (int)
+    {
+        be old = *this;
+        set(get() - 1);
+        return old;
+    }
 };
 
 extern "C" void* MmGetHostAddress(uint32_t ptr);
@@ -198,13 +224,12 @@ typedef struct _XDISPATCHER_HEADER
     XLIST_ENTRY WaitListHead;
 } XDISPATCHER_HEADER, * XPDISPATCHER_HEADER;
 
-// These variables are never accessed in guest code, we can safely use them in little endian
 typedef struct _XRTL_CRITICAL_SECTION
 {
     XDISPATCHER_HEADER Header;
-    int32_t LockCount;
-    int32_t RecursionCount;
-    uint32_t OwningThread;
+    be<int32_t> LockCount;
+    be<int32_t> RecursionCount;
+    be<uint32_t> OwningThread;
 } XRTL_CRITICAL_SECTION;
 
 typedef struct _XANSI_STRING {
