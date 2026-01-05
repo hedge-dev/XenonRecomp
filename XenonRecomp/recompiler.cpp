@@ -2288,7 +2288,7 @@ bool Recompiler::Recompile(const Function& fn)
     auto end = base + fn.size;
     auto* data = (uint32_t*)image.Find(base);
 
-    static std::unordered_set<size_t> labels;
+    std::unordered_set<size_t> labels;
     labels.clear();
 
     for (size_t addr = base; addr < end; addr += 4)
@@ -2394,7 +2394,7 @@ bool Recompiler::Recompile(const Function& fn)
 
     // TODO: the printing scheme here is scuffed
     RecompilerLocalVariables localVariables;
-    static std::string tempString;
+    std::string tempString;
     tempString.clear();
     std::swap(out, tempString);
 
@@ -2642,7 +2642,7 @@ void Recompiler::SaveCurrentOutData(const std::string_view& name)
         FILE* f = fopen(filePath.c_str(), "rb");
         if (f)
         {
-            static std::vector<uint8_t> temp;
+            std::vector<uint8_t> temp;
 
             fseek(f, 0, SEEK_END);
             long fileSize = ftell(f);
