@@ -213,7 +213,15 @@ void TestRecompiler::RecompileTests(const char* srcDirectoryPath, const char* ds
                                         int secondSpaceIndex = str.find(' ', spaceIndex + 1);
                                         auto reg = str.substr(spaceIndex + 1, secondSpaceIndex - spaceIndex - 1);
                                         if (reg[0] == 'c')
-                                            continue; // TODO
+                                        {
+                                            // CR register: parse 4-bit value (lt, gt, eq, so)
+                                            auto value = str.substr(secondSpaceIndex + 1);
+                                            fmt::println(file, "\tPPC_CHECK_VALUE_U({}, ctx.{}.lt, ({}) >> 3 & 1);", name, reg, value);
+                                            fmt::println(file, "\tPPC_CHECK_VALUE_U({}, ctx.{}.gt, ({}) >> 2 & 1);", name, reg, value);
+                                            fmt::println(file, "\tPPC_CHECK_VALUE_U({}, ctx.{}.eq, ({}) >> 1 & 1);", name, reg, value);
+                                            fmt::println(file, "\tPPC_CHECK_VALUE_U({}, ctx.{}.so, ({}) & 1);", name, reg, value);
+                                            continue;
+                                        }
                                         if (reg[0] == 'v')
                                         {
                                             int openingBracketIndex = str.find('[', secondSpaceIndex + 1);

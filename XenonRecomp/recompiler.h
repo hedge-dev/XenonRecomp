@@ -25,6 +25,17 @@ enum class CSRState
     VMX
 };
 
+struct RecompileArgs
+{
+    const Function& fn;
+    uint32_t base;
+    const ppc_insn& insn;
+    const uint32_t* data;
+    std::unordered_map<uint32_t, RecompilerSwitchTable>::iterator& switchTable;
+    RecompilerLocalVariables& localVariables;
+    CSRState& csrState;
+};
+
 struct Recompiler
 {
     // Enforce In-order Execution of I/O constant for quick comparison
@@ -52,15 +63,7 @@ struct Recompiler
 
     void Analyse();
 
-    // TODO: make a RecompileArgs struct instead this is getting messy
-    bool Recompile(
-        const Function& fn,
-        uint32_t base,
-        const ppc_insn& insn,
-        const uint32_t* data,
-        std::unordered_map<uint32_t, RecompilerSwitchTable>::iterator& switchTable,
-        RecompilerLocalVariables& localVariables,
-        CSRState& csrState);
+    bool Recompile(const RecompileArgs& args);
 
     bool Recompile(const Function& fn);
 

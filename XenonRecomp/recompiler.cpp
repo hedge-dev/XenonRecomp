@@ -254,15 +254,16 @@ void Recompiler::Analyse()
     std::sort(functions.begin(), functions.end(), [](auto& lhs, auto& rhs) { return lhs.base < rhs.base; });
 }
 
-bool Recompiler::Recompile(
-    const Function& fn,
-    uint32_t base,
-    const ppc_insn& insn,
-    const uint32_t* data,
-    std::unordered_map<uint32_t, RecompilerSwitchTable>::iterator& switchTable,
-    RecompilerLocalVariables& localVariables,
-    CSRState& csrState)
+bool Recompiler::Recompile(const RecompileArgs& args)
 {
+    const Function& fn = args.fn;
+    uint32_t base = args.base;
+    const ppc_insn& insn = args.insn;
+    const uint32_t* data = args.data;
+    auto& switchTable = args.switchTable;
+    RecompilerLocalVariables& localVariables = args.localVariables;
+    CSRState& csrState = args.csrState;
+
     println("\t// {} {}", insn.opcode->name, insn.op_str);
 
     // TODO: we could cache these formats in an array
@@ -363,9 +364,11 @@ bool Recompiler::Recompile(
             return "ea";
         };
 
-    // TODO (Sajid): Check for out of bounds access
     auto mmioStore = [&]() -> bool
         {
+            // Check if the next instruction is within bounds
+            if (base + 4 >= fn.base + fn.size)
+                return false;
             return *(data + 1) == c_eieio;
         };
 
@@ -1255,8 +1258,21 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_MFOCRF:
-        // TODO: don't hardcode to cr6
-        println("\t{}.u64 = ({}.lt << 7) | ({}.gt << 6) | ({}.eq << 5) | ({}.so << 4);", r(insn.operands[0]), cr(6), cr(6), cr(6), cr(6));
+        {
+            // Decode FXM field mask to determine which CR field to read
+            // FXM is an 8-bit mask where bit 0 (0x80) = cr0, bit 1 (0x40) = cr1, etc.
+            uint32_t fxm = insn.operands[1];
+            size_t crField = 0;
+            for (size_t i = 0; i < 8; i++)
+            {
+                if (fxm & (0x80 >> i))
+                {
+                    crField = i;
+                    break;
+                }
+            }
+            println("\t{}.u64 = ({}.lt << 7) | ({}.gt << 6) | ({}.eq << 5) | ({}.so << 4);", r(insn.operands[0]), cr(crField), cr(crField), cr(crField), cr(crField));
+        }
         break;
 
     case PPC_INST_MFTB:
@@ -2284,7 +2300,7 @@ bool Recompiler::Recompile(
 
 bool Recompiler::Recompile(const Function& fn)
 {
-    auto base = fn.base;
+    uint32_t base = fn.base;
     auto end = base + fn.size;
     auto* data = (uint32_t*)image.Find(base);
 
@@ -2427,7 +2443,7 @@ bool Recompiler::Recompile(const Function& fn)
             if (insn.opcode->id == PPC_INST_BCTR && (*(data - 1) == 0x07008038 || *(data - 1) == 0x00000060) && switchTable == config.switchTables.end())
                 fmt::println("Found a switch jump table at {:X} with no switch table entry present", base);
 
-            if (!Recompile(fn, base, insn, data, switchTable, localVariables, csrState))
+            if (!Recompile(RecompileArgs{fn, base, insn, data, switchTable, localVariables, csrState}))
             {
                 fmt::println("Unrecognized instruction at 0x{:X}: {}", base, insn.opcode->name);
                 allRecompiled = false;
