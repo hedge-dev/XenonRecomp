@@ -41,11 +41,6 @@ size_t Function::SearchBlock(size_t address) const
 Function Function::Analyze(const void* code, size_t size, size_t base,
                            const AnalyzerSwitchTableMap* switchMap)
 {
-    (void)switchMap; // consumed in a follow-up commit; receiving now so
-                     // that callers can adopt the signature and pass a
-                     // map immediately without waiting for the walker
-                     // change to land.
-
     Function fn{ base, 0 };
 
     if (*((uint32_t*)code + 1) == 0x04000048) // shifted ptr tail call
@@ -64,6 +59,11 @@ Function Function::Analyze(const void* code, size_t size, size_t base,
     std::vector<size_t> blockStack{};
     blockStack.reserve(32);
     blockStack.emplace_back();
+
+    // Set when the walker pushes switch-label successor blocks via the
+    // switchMap. When set, the end-of-Analyze discontinuity erase is
+    // skipped — see the comment on the discontinuity pass below for why.
+    bool switchAwareTermination = false;
 
     #define RESTORE_DATA() if (!blockStack.empty()) data = (dataStart + ((blocks[blockStack.back()].base + blocks[blockStack.back()].size) / sizeof(*data))) - 1; // continue adds one
 
@@ -188,6 +188,66 @@ Function Function::Analyze(const void* code, size_t size, size_t base,
                 {
                     // 5th bit of BO tells cpu to ignore the counter, which is a blr/bctr otherwise it's conditional
                     const bool conditional = !(PPC_BO(instruction) & 0x10);
+
+                    // Switch-aware branch: when this is an unconditional
+                    // bctr (xop 528) at a known-switch site, push every
+                    // label (plus the default) as a successor block
+                    // instead of terminating without successors.
+                    //
+                    // Without this branch, an unconditional bctr pops
+                    // the current block and adds no new blocks, so the
+                    // walker never reaches the switch-dispatched code.
+                    // The discontinuity pass at the end of this function
+                    // then erases every block past the first address
+                    // gap — which for a switch-dispatched function is
+                    // immediately after bctr+4, sweeping all label
+                    // blocks away. Downstream consumers (e.g., a
+                    // recompiler's "label in fn.base..fn.base+fn.size"
+                    // boundary check) then mis-flag the labels as out
+                    // of function range.
+                    //
+                    // Two guards mirror the existing pre-base-branch
+                    // handling for unconditional `b` (see the "Branches
+                    // before base are just tail calls" note above):
+                    //
+                    //   label < base:         skip. Labels that point
+                    //     before the function base are either malformed
+                    //     TOML entries or tail-call-style jumps; they
+                    //     do not extend `fn.size`.
+                    //
+                    //   label >= base + size: skip. Labels outside the
+                    //     caller's analysis window cannot be walked
+                    //     safely; emplacing them here would compute an
+                    //     out-of-buffer `data` pointer at the next
+                    //     RESTORE_DATA.
+                    if (!conditional && xop == 528 && switchMap)
+                    {
+                        auto it = switchMap->find(addr);
+                        if (it != switchMap->end())
+                        {
+                            switchAwareTermination = true;
+                            auto pushLabel = [&](uint32_t label)
+                            {
+                                if (label < base) return;
+                                if (label >= base + size) return;
+                                if (fn.SearchBlock(label) == -1)
+                                {
+                                    const size_t lBase = label - base;
+                                    blocks.emplace_back(lBase, 0);
+                                    DEBUG(blocks.back().parent = blockBase);
+                                    blockStack.emplace_back(blocks.size() - 1);
+                                }
+                            };
+                            for (uint32_t label : it->second.labels)
+                            {
+                                pushLabel(label);
+                            }
+                            pushLabel(it->second.defaultLabel);
+                            RESTORE_DATA();
+                            continue;
+                        }
+                    }
+
                     if (conditional)
                     {
                         // right block's just going to return
@@ -216,7 +276,17 @@ Function Function::Analyze(const void* code, size_t size, size_t base,
         }
     }
 
-    // Sort and invalidate discontinuous blocks
+    // Sort and invalidate discontinuous blocks.
+    //
+    // When switchAwareTermination is set, the walker pushed successor
+    // blocks for every label of at least one switch dispatch. Those
+    // label blocks are separated from the pre-bctr block by the jump-
+    // table bytes themselves (data region living in the code section),
+    // which creates a legitimate address gap. The generic discontinuity
+    // heuristic would erase every block past that gap, which is exactly
+    // the set of blocks we just worked to make reachable. Skip the
+    // erase in that case; sort still runs because fn.size below picks
+    // max(block.base + block.size) and the sort is cheap.
     if (blocks.size() > 1)
     {
         std::sort(blocks.begin(), blocks.end(), [](const Block& a, const Block& b)
@@ -224,21 +294,24 @@ Function Function::Analyze(const void* code, size_t size, size_t base,
             return a.base < b.base;
         });
 
-        size_t discontinuity = -1;
-        for (size_t i = 0; i < blocks.size() - 1; i++)
+        if (!switchAwareTermination)
         {
-            if (blocks[i].base + blocks[i].size >= blocks[i + 1].base)
+            size_t discontinuity = -1;
+            for (size_t i = 0; i < blocks.size() - 1; i++)
             {
-                continue;
+                if (blocks[i].base + blocks[i].size >= blocks[i + 1].base)
+                {
+                    continue;
+                }
+
+                discontinuity = i + 1;
+                break;
             }
 
-            discontinuity = i + 1;
-            break;
-        }
-
-        if (discontinuity != -1)
-        {
-            blocks.erase(blocks.begin() + discontinuity, blocks.end());
+            if (discontinuity != -1)
+            {
+                blocks.erase(blocks.begin() + discontinuity, blocks.end());
+            }
         }
     }
 
