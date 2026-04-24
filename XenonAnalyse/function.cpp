@@ -38,8 +38,14 @@ size_t Function::SearchBlock(size_t address) const
     return -1;
 }
 
-Function Function::Analyze(const void* code, size_t size, size_t base)
+Function Function::Analyze(const void* code, size_t size, size_t base,
+                           const AnalyzerSwitchTableMap* switchMap)
 {
+    (void)switchMap; // consumed in a follow-up commit; receiving now so
+                     // that callers can adopt the signature and pass a
+                     // map immediately without waiting for the walker
+                     // change to land.
+
     Function fn{ base, 0 };
 
     if (*((uint32_t*)code + 1) == 0x04000048) // shifted ptr tail call
