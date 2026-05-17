@@ -247,14 +247,14 @@ typedef struct _XXOVERLAPPED {
         {
             be<uint32_t> Error;
             be<uint32_t> Length;
-        };
+        } errorLength;
 
         struct
         {
             uint32_t InternalLow;
             uint32_t InternalHigh;
-        };
-    };
+        } internalParts;
+    } data;
     uint32_t InternalContext;
     be<uint32_t> hEvent;
     be<uint32_t> pCompletionRoutine;
