@@ -252,7 +252,7 @@ void Recompiler::Analyse()
             processed = data - section.data;
             if (processed - lastReported >= 0x100000)
             {
-                fmt::println(stderr, "[Analyse] Branch scan: 0x{:X}/0x{:X} ({:.1f}%)", processed, section.size, 100.0 * static_cast<double>(processed) / section.size);
+                fmt::println(stderr, "[Analyse] Function-discovery scan: 0x{:X}/0x{:X} ({:.1f}%)", processed, section.size, 100.0 * static_cast<double>(processed) / section.size);
                 lastReported = processed;
             }
             auto invalidInstr = config.invalidInstructions.find(ByteSwap(*(uint32_t*)data));
@@ -273,8 +273,10 @@ void Recompiler::Analyse()
             }
             else
             {
+                fmt::println(stderr, "[Analyse] Calling Function::Analyze at 0x{:X}, remaining=0x{:X}", base, dataEnd - data);
                 auto& fn = functions.emplace_back(Function::Analyze(data, dataEnd - data, base));
                 image.symbols.emplace(fmt::format("sub_{:X}", fn.base), fn.base, fn.size, Symbol_Function);
+                fmt::println(stderr, "[Analyse] Function::Analyze complete at 0x{:X}, size=0x{:X}", fn.base, fn.size);
 
                 base += fn.size;
                 data += fn.size;
