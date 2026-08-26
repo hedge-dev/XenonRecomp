@@ -12,6 +12,7 @@ static uint64_t ComputeMask(uint32_t mstart, uint32_t mstop)
 
 bool Recompiler::LoadConfig(const std::string_view& configFilePath)
 {
+    fmt::println(stderr, "[LoadConfig] Parsing TOML: {}", configFilePath);
     config.Load(configFilePath);
 
     std::vector<uint8_t> file;
@@ -89,12 +90,15 @@ bool Recompiler::LoadConfig(const std::string_view& configFilePath)
         }
     }
 
+    fmt::println(stderr, "[LoadConfig] Parsing XEX image: {} bytes", file.size());
     image = Image::ParseImage(file.data(), file.size());
+    fmt::println(stderr, "[LoadConfig] XEX parsed: image size = 0x{:X}, base = 0x{:X}, entry = 0x{:X}, sections = {}", image.size, image.base, image.entry_point, image.sections.size());
     return true;
 }
 
 void Recompiler::Analyse()
 {
+    fmt::println(stderr, "[Analyse] Starting");
     for (size_t i = 14; i < 128; i++)
     {
         if (i < 32)
@@ -177,8 +181,14 @@ void Recompiler::Analyse()
     auto& pdata = *image.Find(".pdata");
     size_t count = pdata.size / sizeof(IMAGE_CE_RUNTIME_FUNCTION);
     auto* pf = (IMAGE_CE_RUNTIME_FUNCTION*)pdata.data;
+    fmt::println(stderr, "[Analyse] .pdata entries: {}", count);
     for (size_t i = 0; i < count; i++)
     {
+        if ((i % 10000) == 0 || i + 1 == count)
+        {
+            fmt::println(stderr, "[Analyse] .pdata: {}/{} ({:.1f}%)", i + 1, count, 100.0 * static_cast<double>(i + 1) / count);
+        }
+
         auto fn = pf[i];
         fn.BeginAddress = ByteSwap(fn.BeginAddress);
         fn.Data = ByteSwap(fn.Data);
@@ -193,8 +203,10 @@ void Recompiler::Analyse()
         }
     }
 
+    fmt::println(stderr, "[Analyse] Scanning {} image sections...", image.sections.size());
     for (const auto& section : image.sections)
     {
+        fmt::println(stderr, "[Analyse] Section base=0x{:X}, size=0x{:X}, flags=0x{:X}", section.base, section.size, static_cast<unsigned>(section.flags));
         if (!(section.flags & SectionFlags_Code))
         {
             continue;
@@ -202,9 +214,18 @@ void Recompiler::Analyse()
         size_t base = section.base;
         uint8_t* data = section.data;
         uint8_t* dataEnd = section.data + section.size;
+        size_t processed = 0;
+        size_t lastReported = 0;
 
+        fmt::println(stderr, "[Analyse] Starting branch scan for section");
         while (data < dataEnd)
         {
+            processed = data - section.data;
+            if (processed - lastReported >= 0x100000)
+            {
+                fmt::println(stderr, "[Analyse] Branch scan: 0x{:X}/0x{:X} ({:.1f}%)", processed, section.size, 100.0 * static_cast<double>(processed) / section.size);
+                lastReported = processed;
+            }
             uint32_t insn = ByteSwap(*(uint32_t*)data);
             if (PPC_OP(insn) == PPC_OP_B && PPC_BL(insn))
             {
@@ -219,11 +240,21 @@ void Recompiler::Analyse()
             }
             data += 4;
         }
+        fmt::println(stderr, "[Analyse] Branch scan complete");
 
         data = section.data;
+        processed = 0;
+        lastReported = 0;
 
+        fmt::println(stderr, "[Analyse] Starting function-discovery scan for section");
         while (data < dataEnd)
         {
+            processed = data - section.data;
+            if (processed - lastReported >= 0x100000)
+            {
+                fmt::println(stderr, "[Analyse] Function-discovery scan: 0x{:X}/0x{:X} ({:.1f}%)", processed, section.size, 100.0 * static_cast<double>(processed) / section.size);
+                lastReported = processed;
+            }
             auto invalidInstr = config.invalidInstructions.find(ByteSwap(*(uint32_t*)data));
             if (invalidInstr != config.invalidInstructions.end())
             {
@@ -242,16 +273,20 @@ void Recompiler::Analyse()
             }
             else
             {
+                fmt::println(stderr, "[Analyse] Calling Function::Analyze at 0x{:X}, remaining=0x{:X}", base, dataEnd - data);
                 auto& fn = functions.emplace_back(Function::Analyze(data, dataEnd - data, base));
                 image.symbols.emplace(fmt::format("sub_{:X}", fn.base), fn.base, fn.size, Symbol_Function);
+                fmt::println(stderr, "[Analyse] Function::Analyze complete at 0x{:X}, size=0x{:X}", fn.base, fn.size);
 
                 base += fn.size;
                 data += fn.size;
             }
         }
+        fmt::println(stderr, "[Analyse] Function-discovery scan complete");
     }
 
     std::sort(functions.begin(), functions.end(), [](auto& lhs, auto& rhs) { return lhs.base < rhs.base; });
+    fmt::println(stderr, "[Analyse] Complete: {} functions, {} symbols", functions.size(), image.symbols.size());
 }
 
 bool Recompiler::Recompile(

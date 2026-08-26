@@ -133,6 +133,8 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
     Image image{};
     std::unique_ptr<uint8_t[]> result{};
     size_t imageSize = security->imageSize;
+    fprintf(stderr, "[XEX] imageSize = 0x%zX (%zu MB)\n", static_cast<size_t>(imageSize), static_cast<size_t>(imageSize) / (1024 * 1024));
+    fprintf(stderr, "[XEX] encryptionType = %u, compressionType = %u\n", static_cast<unsigned>(fileFormatInfo->encryptionType.get()), static_cast<unsigned>(fileFormatInfo->compressionType.get()));
 
     // Decompress image
     if (fileFormatInfo != nullptr)
@@ -155,7 +157,9 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
             decryptedData = std::make_unique<uint8_t[]>(dataSize - header->headerSize);
             memcpy(decryptedData.get(), data + header->headerSize, dataSize - header->headerSize);
             AES_init_ctx_iv(&aesContext, decryptedKey, AESBlankIV);
+            fprintf(stderr, "[XEX] Starting AES decryption of %zu bytes...\n", dataSize - header->headerSize);
             AES_CBC_decrypt_buffer(&aesContext, decryptedData.get(), dataSize - header->headerSize);
+            fprintf(stderr, "[XEX] AES decryption complete\n");
 
             srcData = decryptedData.get();
         }
@@ -250,7 +254,9 @@ Image Xex2LoadImage(const uint8_t* data, size_t dataSize)
             uint32_t uncompressedSize = security->imageSize;
             uint8_t* buffer = destData;
 
+            fprintf(stderr, "[XEX] Starting LZX decompression: %zu compressed bytes -> %zu bytes...\n", d - compressBuffer.get(), uncompressedSize);
             resultCode = lzxDecompress(compressBuffer.get(), d - compressBuffer.get(), buffer, uncompressedSize, ((const Xex2FileNormalCompressionInfo*)(fileFormatInfo + 1))->windowSize, nullptr, 0);
+            fprintf(stderr, "[XEX] LZX decompression complete: result = %d\n", resultCode);
 
             if (resultCode)
                 return {};
