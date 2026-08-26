@@ -217,6 +217,7 @@ void Recompiler::Analyse()
         size_t processed = 0;
         size_t lastReported = 0;
 
+        fmt::println(stderr, "[Analyse] Starting branch scan for section");
         while (data < dataEnd)
         {
             processed = data - section.data;
@@ -239,11 +240,13 @@ void Recompiler::Analyse()
             }
             data += 4;
         }
+        fmt::println(stderr, "[Analyse] Branch scan complete");
 
         data = section.data;
         processed = 0;
         lastReported = 0;
 
+        fmt::println(stderr, "[Analyse] Starting function-discovery scan for section");
         while (data < dataEnd)
         {
             processed = data - section.data;
