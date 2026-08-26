@@ -280,6 +280,7 @@ void Recompiler::Analyse()
                 data += fn.size;
             }
         }
+        fmt::println(stderr, "[Analyse] Function-discovery scan complete");
     }
 
     std::sort(functions.begin(), functions.end(), [](auto& lhs, auto& rhs) { return lhs.base < rhs.base; });
