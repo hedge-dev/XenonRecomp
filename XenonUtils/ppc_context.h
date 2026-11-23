@@ -16,6 +16,10 @@
 #include <x86/sse.h>
 #include <x86/sse4.1.h>
 
+#if defined(__e2k__)
+#include "x86intrin.h" // get __rdtsc
+#endif
+
 // SSE3 constants are missing from simde
 #ifndef _MM_DENORMALS_ZERO_MASK
 #define _MM_DENORMALS_ZERO_MASK 0x0040
@@ -252,6 +256,31 @@ struct PPCFPSCRRegister
     inline void setcsr(uint32_t csr) noexcept
     {
         __asm__ __volatile__("msr fpcr, %0" : : "r"(csr));
+    }
+#elif defined(__e2k__)
+    // E2K PFPFR
+    static constexpr size_t RoundShift = 13;
+    static constexpr size_t RoundMask = 3 << RoundShift;
+
+    // E2K headers expose PFPFR rounding control, but no FTZ control.
+    static constexpr size_t FlushMask = 0;
+
+    // Nearest, Zero, +Infinity, -Infinity
+    static constexpr size_t GuestToHost[] = {
+        0 << RoundShift,
+        3 << RoundShift,
+        2 << RoundShift,
+        1 << RoundShift
+    };
+
+    inline uint32_t getcsr() noexcept {
+        uint32_t csr;
+        __GETPFPFR(csr);
+        return csr;
+    }
+
+    inline void setcsr(uint32_t csr) noexcept {
+        __SETPFPFR(csr);
     }
 #else
 #   error "Missing implementation for FPSCR."
@@ -696,7 +725,7 @@ inline uint64_t __rdtsc()
                  : "=r"(ret)::"memory");
     return ret;
 }
-#elif !defined(__x86_64__) && !defined(_M_X64)
+#elif !defined(__x86_64__) && !defined(_M_X64) && !defined(__e2k__)
 #   error "Missing implementation for __rdtsc()"
 #endif
 
