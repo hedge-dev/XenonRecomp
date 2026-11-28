@@ -609,7 +609,11 @@ bool Recompiler::Recompile(
     case PPC_INST_BCTR:
         if (switchTable != config.switchTables.end())
         {
-            println("\tswitch ({}.u64) {{", r(switchTable->second.r));
+            // The index is a 32-bit value: the bounds check ahead of a jump table is
+            // cmplwi, which ignores the upper half of the register, and that half is
+            // not guaranteed to be zero (an rlwinm with a wrapping mask copies the low
+            // word into it, for example), so switching on .u64 can miss every case.
+            println("\tswitch ({}.u32) {{", r(switchTable->second.r));
 
             for (size_t i = 0; i < switchTable->second.labels.size(); i++)
             {
