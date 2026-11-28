@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
+#include <type_traits>
 
 #include <x86/avx.h>
 #include <x86/sse.h>
@@ -699,5 +701,22 @@ inline uint64_t __rdtsc()
 #elif !defined(__x86_64__) && !defined(_M_X64)
 #   error "Missing implementation for __rdtsc()"
 #endif
+
+// PowerPC's integer divide does not trap: a zero divisor, or the one signed
+// quotient that overflows (most negative / -1), leaves the result undefined and
+// execution continues. The host's divide traps on both (SIGFPE on x86-64), so
+// these return 0, as Xenia does.
+template<typename T>
+inline T PPCDivide(T a, T b) noexcept
+{
+    if (b == 0)
+        return 0;
+    if constexpr (std::is_signed_v<T>)
+    {
+        if (b == -1 && a == std::numeric_limits<T>::min())
+            return 0;
+    }
+    return a / b;
+}
 
 #endif
