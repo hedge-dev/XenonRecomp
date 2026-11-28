@@ -849,7 +849,7 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_EIEIO:
-        // no op
+        println("\tPPC_EIEIO();");
         break;
 
     case PPC_INST_EXTSB:
@@ -1209,7 +1209,7 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_LWSYNC:
-        // no op
+        println("\tPPC_LWSYNC();");
         break;
 
     case PPC_INST_LWZ:
@@ -1711,7 +1711,7 @@ bool Recompiler::Recompile(
         break;
 
     case PPC_INST_SYNC:
-        // no op
+        println("\tPPC_SYNC();");
         break;
 
     case PPC_INST_TDLGEI:

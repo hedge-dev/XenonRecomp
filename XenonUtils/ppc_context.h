@@ -205,6 +205,21 @@ union alignas(0x10) PPCVRegister
     double f64[2];
 };
 
+// The guest's memory ordering instructions. x86-64 already orders loads and
+// stores as strongly as lwsync and eieio require. AArch64 is weakly ordered like
+// PowerPC, so they become real barriers there. lwsync orders everything except
+// a store followed by a load, which no single AArch64 barrier expresses, so it
+// takes the full one.
+#if defined(__aarch64__) || defined(_M_ARM64)
+#define PPC_LWSYNC() __asm__ __volatile__("dmb ish" ::: "memory")
+#define PPC_SYNC() __asm__ __volatile__("dmb ish" ::: "memory")
+#define PPC_EIEIO() __asm__ __volatile__("dmb ishst" ::: "memory")
+#else
+#define PPC_LWSYNC() ((void)0)
+#define PPC_SYNC() ((void)0)
+#define PPC_EIEIO() ((void)0)
+#endif
+
 #define PPC_ROUND_NEAREST 0x00
 #define PPC_ROUND_TOWARD_ZERO 0x01
 #define PPC_ROUND_UP 0x02
@@ -215,14 +230,14 @@ struct PPCFPSCRRegister
 {
     uint32_t csr;
 
-    static constexpr size_t HostToGuest[] = { PPC_ROUND_NEAREST, PPC_ROUND_DOWN, PPC_ROUND_UP, PPC_ROUND_TOWARD_ZERO };
-
     // simde does not handle denormal flags, so we need to implement per-arch.
 #if defined(__x86_64__) || defined(_M_X64)
     static constexpr size_t RoundShift = 13;
     static constexpr size_t RoundMask = SIMDE_MM_ROUND_MASK;
     static constexpr size_t FlushMask = SIMDE_MM_FLUSH_ZERO_MASK | _MM_DENORMALS_ZERO_MASK;
     static constexpr size_t GuestToHost[] = { SIMDE_MM_ROUND_NEAREST, SIMDE_MM_ROUND_TOWARD_ZERO, SIMDE_MM_ROUND_UP, SIMDE_MM_ROUND_DOWN };
+    // MXCSR.RC: nearest, down, up, zero.
+    static constexpr size_t HostToGuest[] = { PPC_ROUND_NEAREST, PPC_ROUND_DOWN, PPC_ROUND_UP, PPC_ROUND_TOWARD_ZERO };
 
     inline uint32_t getcsr() noexcept
     {
@@ -239,8 +254,10 @@ struct PPCFPSCRRegister
     static constexpr size_t RoundMask = 3 << RoundShift;
     // FZ and FZ16
     static constexpr size_t FlushMask = (1 << 19) | (1 << 24);
-    // Nearest, Zero, -Infinity, -Infinity
+    // Nearest, Zero, +Infinity, -Infinity
     static constexpr size_t GuestToHost[] = { 0 << RoundShift, 3 << RoundShift, 1 << RoundShift, 2 << RoundShift };
+    // FPCR.RMode: nearest, +infinity, -infinity, zero.
+    static constexpr size_t HostToGuest[] = { PPC_ROUND_NEAREST, PPC_ROUND_UP, PPC_ROUND_DOWN, PPC_ROUND_TOWARD_ZERO };
 
     inline uint32_t getcsr() noexcept
     {
