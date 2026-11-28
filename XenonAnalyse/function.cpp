@@ -180,8 +180,11 @@ Function Function::Analyze(const void* code, size_t size, size_t base)
                 }
                 else if (op == PPC_OP_CTR)
                 {
-                    // 5th bit of BO tells cpu to ignore the counter, which is a blr/bctr otherwise it's conditional
-                    const bool conditional = !(PPC_BO(instruction) & 0x10);
+                    // A return is unconditional only when BO ignores both the condition (0x10)
+                    // and the counter (0x04): blr is BO 20. bdzlr (BO 18) ignores the
+                    // condition but still tests the counter, and taking it for a return
+                    // ended memset at its first bdzlr and dropped the tail bytes' stores.
+                    const bool conditional = (PPC_BO(instruction) & 0x14) != 0x14;
                     if (conditional)
                     {
                         // right block's just going to return
